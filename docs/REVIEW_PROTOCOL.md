@@ -41,7 +41,25 @@
 ## 헌장과 다르거나 애매한 지점 (있으면 반드시 적기)
 ```
 
-그 다음 사용자에게 "메인 에이전트에게 검토 요청을 올렸다"고 알린다. 메인 에이전트가 같은 머신에서 실행 중이면 메시지로 직접 알려도 된다.
+그 다음 **메인 에이전트에게 직접 알린다** (아래 "완료·검토 요청 알림").
+
+## 완료·검토 요청 알림 (작업 에이전트 → 메인 에이전트)
+
+작업을 끝냈거나(SUPERSET_WORKER_DONE), 막혔거나(SUPERSET_WORKER_BLOCKED), 검토 요청을 올렸으면 사용자를 거치지 않고 메인 에이전트 터미널에 직접 알린다. 명령은 두 개다 (텍스트 입력 후 Enter).
+
+```bash
+superset terminals send --workspace ba253440-b4bd-4f55-bcc2-25ef1392fca5 \
+  --terminal 3a4f8cab-c8aa-429d-b4bf-e8a557118442 \
+  --text "[작업 알림] <작업 ID> <DONE|BLOCKED|REVIEW>: <한 줄 요약>. 보고 위치: <요청 파일 경로 또는 '내 터미널'>. 워크스페이스 <내 workspace id>, 터미널 <내 terminal id>" --json
+superset terminals send --workspace ba253440-b4bd-4f55-bcc2-25ef1392fca5 \
+  --terminal 3a4f8cab-c8aa-429d-b4bf-e8a557118442 --keys enter --json
+```
+
+- 메시지는 한 줄로 짧게 쓴다. 자세한 내용은 요청 파일이나 자기 터미널의 완료 보고에 남긴다
+- 자기 workspace id는 `$SUPERSET_WORKSPACE_ID`에 있다. 터미널 id를 모르면 `superset terminals list --workspace $SUPERSET_WORKSPACE_ID --json`으로 찾는다
+- 알림을 보낸 뒤에는 메인 에이전트의 판정이 터미널로 올 때까지 기다린다. 판정을 기다리지 않아도 되는 독립 작업이 있으면 진행해도 된다
+- 메인 에이전트 세션이 바뀌면 이 터미널 id도 바뀐다. 메인 에이전트가 이 문서를 갱신한다
+
 
 ## 판정 기준 (메인 에이전트)
 
