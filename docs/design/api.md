@@ -60,6 +60,8 @@
 - 빈 값은 키를 빼지 않고 `null`로 보낸다
 - 클라이언트는 모르는 필드를 무시해야 한다 (필드 추가는 호환 변경으로 본다)
 - 속도 제한: 토큰 없는 엔드포인트는 IP별 제한. 넘으면 `429 rate_limited`, `Retry-After` 헤더
+- CORS (웹에서 앱을 열 때): 서버의 `CORS_ORIGINS`에 적힌 출처만 허용한다. 기본은 개발용 `http://localhost:8081`, `http://localhost:19006` (127.0.0.1 포함). 허용 헤더는 `Authorization`, `Content-Type`. 운영에서는 `*`를 쓰지 않는다 (R-018). 휴대폰 앱(Expo 네이티브)은 CORS와 무관하다
+- **GET 요청은 상태를 바꾸지 않는다** (R-018). 복약 건 만들기·열기(`scheduled`→`asked`)·기한 넘긴 건의 인계는 서버의 1분 예약 작업이 한다. 그래서 상태와 인계는 시각보다 **최대 1분 늦게** 반영될 수 있다. 앱은 로컬 알림을 `ask_times`로 예약하므로 영향이 없다. 사진 업로드는 그 건의 시각·기한을 바로 반영한 뒤 처리한다
 
 ---
 
@@ -600,6 +602,7 @@ Refill 객체:
 - `next_event`: 아직 `scheduled` 또는 `asked`인 가장 이른 건 (E3 "다음 약 시간"). 없으면 `null`
 - 어르신 앱은 응답을 받을 때마다 `ask_times`로 로컬 알림을 다시 맞추고, `state`가 `asked`·`retake_requested`·`reminded`가 아닌 건의 알림은 취소한다 (backend 6장)
 - 일정이 없으면 `items: []`
+- 자정 직후에는 1분 예약 작업이 오늘 복약 건을 만들 때까지 `items`가 비어 있을 수 있다
 
 ### 3.18 `POST /dose-events/{id}/photo` — 약통 사진 올리기 (E5 → E6 → E7)
 - 권한: `elder`
@@ -802,6 +805,26 @@ PUT 요청
 - 앱은 `is_simulated: true`인 건의 화면(E4~E7, E8, G4~G6)에 **"시뮬레이션"**을 표시한다
 - 오류: `404 not_found` (데모가 아님, 없는 slot_id), `409 event_already_started` (오늘 그 칸의 건이 이미 `asked` 이후), `422 validation_error` (오늘 요일의 칸이 아님)
 
+### 3.28 `POST /dev/mock-scenario` — QA용 결정적 모의 판독 ★추가 (R-018)
+- 권한: `any`. **서버 `DEMO_MODE=true`, 가족 `is_demo=true`, 매일 판독기가 `mock`일 때만 동작한다. 그 밖에는 `404 not_found`** (경로가 없는 것처럼 응답)
+- 용도: 실서버에서 MockReader는 사진 내용으로 결과를 골라서, retake·remind_retake 같은 경로를 일부러 재현할 수 없다. 이 경로로 **다음 복약 사진 1장**의 판독 결과를 정한다. 시연 트리거(3.27)와 같은 범주다
+```json
+요청
+{ "scenario": "unclear" }      // "normal" | "unclear" | "unchanged" | "double_suspected" | null(지우기)
+```
+```json
+200
+{ "scenario": "unclear", "applies_to": "next_dose_photo", "is_mock": true }
+```
+- 다음 `POST /dose-events/{id}/photo` 한 번에만 적용되고 사라진다 (그 가족의 어느 복약 건이든). 서버를 재시작하면 지워진다
+- 시나리오가 정하는 것은 **판독 결과**뿐이다. 분류·재촬영·안내·인계는 실제 규칙을 그대로 탄다. 예: 이미 쓴 칸(R-014)에 `normal`을 주면 `recorded`가 아니라 `guardian_notified`가 된다
+  - `normal`: 대상 칸 비어 있음, 다른 칸은 기대 상태대로
+  - `unclear`: 대상 칸 `unclear`
+  - `unchanged`: 대상 칸 차 있음
+  - `double_suspected`: 대상 칸 비어 있음 + 기대상 차 있어야 할 다른 칸 하나가 비어 있음
+- 판독 결과는 `is_mock: true`, `provider: "mock"`으로 저장·표시된다 (헌장 6장)
+- 오류: `404 not_found` (조건 불충족), `422 validation_error` (모르는 시나리오)
+
 ---
 
 ## 4. 화면별 데이터 출처 (UI 설계 대조)
@@ -819,6 +842,7 @@ UI 설계(R-008 조건 반영)의 모든 화면이 필요한 데이터를 얻을
 | E5 촬영 → E6 판독 중 | 업로드 대상 건 id | 위 `items[].id` → `POST /dose-events/{id}/photo` |
 | E7a / E7b / E7c / E7d | 어떤 화면인지, 모의 여부 | `POST …/photo` 응답 `result`, `is_mock` |
 | 시연 "지금 약 시간" (R-010 10번) | 시연 가능 여부, 시뮬레이션 표시 | `GET /me` `family.is_demo`·`server.demo_mode` → `POST /dev/dose-events`, `DoseEvent.is_simulated` |
+| QA: 판독 결과 고정 (R-018) | 다음 사진의 모의 판독 시나리오 | `POST /dev/mock-scenario` (데모 가족·DEMO_MODE·mock 판독기) |
 | E8 나 약 먹었나? | 시간대별 기록, 시각, 사진 | `GET /dose-events/today` `elder_status`, `taken_at`, `photos[].url` |
 | 모의 판독 띠 | 서버가 모의 판독 중인지 | `GET /me` `server.reader_is_mock` |
 | 연결 해제 감지 | 토큰 무효 | 모든 API의 `401 token_revoked` |
