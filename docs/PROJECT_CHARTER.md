@@ -122,5 +122,5 @@
 | 영역 | 결정 | 결정일 |
 |---|---|---|
 | 앱 | Expo (React Native + TypeScript), 앱 하나에 어르신/보호자 역할 분기 | 2026-10-24 |
-| 백엔드 | 자체 서버, Python. 사용자 PC에서 Cloudflare Tunnel로 공개 (GPU: GTX 1660 Super 6GB). 프레임워크·DB 세부는 미정 | 2026-10-24 |
-| AI 판독 모델 | 미정. 저가 모델이 방향. 오픈소스 모델 자체 호스팅 가능성을 함께 검토한 뒤 정확도 검증으로 결정한다 | |
+| 백엔드 | 자체 서버, Python 3.12 + FastAPI, PostgreSQL 16 (SQLAlchemy 2), APScheduler, Docker Compose. 사용자 PC에서 Cloudflare Tunnel로 공개 (GPU: GTX 1660 Super 6GB). 설계: `docs/design/backend.md`, `docs/design/api.md` | 2026-10-24 |
+| AI 판독 모델 | 미정. 저가 모델이 방향. GPT, Claude, 로컬 오픈소스 모델을 같은 실사진 데이터로 비교 검증해서 결정한다 (계획: `docs/design/ai-model-eval-plan.md`) | |
