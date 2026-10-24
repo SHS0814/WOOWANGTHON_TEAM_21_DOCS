@@ -32,6 +32,7 @@
 | R-013 | 2026-10-24 | 사용자 | 작업 에이전트 직접 알림 | ✅ 사용자 결정 | 작업 에이전트가 완료·막힘·검토 요청 시 사용자를 거치지 않고 메인 에이전트 터미널에 `superset terminals send`로 직접 알린다 (`REVIEW_PROTOCOL.md`) |
 | R-014 | 2026-10-24 | T-BE2 (BE 작업 에이전트) | T-BE2a 중간 체크포인트 + 결정 요청 (`reviews/requests/20261024-be-checkpoint-t-be2a.md`) | ✅ 승인 | 짝짓기~리필 API 승인, BE main 병합, FE 연동 시작. 결정: 이번 주기에 이미 쓴 칸이 다시 대상 칸이면 절대 정상으로 기록하지 않는다. 다른 칸이 차 있으면 `refill_unconfirmed`로, 아니면 새 사유 `refill_overdue`로 보호자에게 넘긴다. 어르신은 E7c |
 | R-015 | 2026-10-24 | BE 에이전트 | T-BE2 엔드포인트 구현 완료 (`reviews/requests/20261024-be-endpoints-t-be2.md`) | 🟡 조건부 승인 | BE main 병합. 기준선에서 빈 칸도 이미 쓴 칸으로 처리하는 해석 승인. 1분 루프 승인 (헌장 9장은 U-003). 조건: C1 MockReader 등록·리필 판독은 모든 칸 full 또는 데모 시드로 올바른 기준선 / C2 pipefail로 실패 감지 후 커밋 |
+| R-016 | 2026-10-24 | BE 에이전트 | T-BE3 데모 시드·배포 준비 (BE `be/demo-deploy` 53123a7, 7cdd0ae, 89c1ad2. 보고는 에이전트 터미널) | ✅ 승인 | 메인 에이전트 확인: pytest 72개(pipefail), ruff, 비밀값 없음, 시드 스크립트는 토큰을 화면에만 출력. R-015 C1·C2 반영. BE main 병합. 실제 터널 연결·재부팅 시험·업타임 모니터·백업 자동 실행은 사용자가 `docs/deploy.md`대로 진행 |
 
 ## 헌장 변경 이력
 
