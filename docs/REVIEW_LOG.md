@@ -36,6 +36,7 @@
 | R-017 | 2026-10-24 | 사용자 | 에이전트 구조와 운영 방식 | ✅ 사용자 결정 | 이름은 BE·FE·AI·QA 에이전트(번호는 작업에만). QA 에이전트 신설(테스트·원칙 점검, 코드 수정 안 함). 이전 세션 2개 종료. Claude 에이전트는 정해진 곳에 원재료를 적고 Notion Agent가 최종 정리. Notion 질문함은 사용자가 지시할 때 메인 에이전트가 확인. 하루 마무리는 작업이 있었던 날만. Notion은 개발 문서 중심(API 엔드포인트 DB, 커밋 기록 DB, 이슈 DB, 질문함). 상세: `REVIEW_PROTOCOL.md` "에이전트 구조와 운영" |
 | R-018 | 2026-10-24 | FE 에이전트 | T-FE2 실제 서버 연결 (FE `fe/api-client` 584bd87, 0052d21, 342a0bb. 보고는 에이전트 터미널) | ✅ 승인 | 메인 에이전트 확인: tsc 통과, `.env` 미커밋, 임시 필드 3개 제거, 어르신 화면 지시 문구 없음. R-012 조건(G5 bbox/격자 그림, 계약서 값 대체) 반영. BE main 로컬 서버로 전 엔드포인트 연동 확인. FE main 병합. 에이전트가 찾은 서버 문제 2건(동시 GET 때 no_response 인계 중복 = R-007 C2 위반, CORS 없음)은 T-BE4로 BE 에이전트에게 배정 |
 | R-019 | 2026-10-24 | BE 에이전트 | T-BE4 서버 문제 수정 (BE `be/fixes-1` 636e8ed, 3cf23cd, ea564ab. 보고는 에이전트 터미널) | ✅ 승인 | 메인 에이전트 확인: pytest 88 통과·2 건너뜀(PostgreSQL 전용 테스트. 에이전트는 PostgreSQL 포함 90개 통과 보고), ruff, 비밀값 없음. 인계 중복은 부분 유니크 인덱스·행 잠금·커밋 후 푸시로 막고 GET은 읽기 전용(상태 반영 최대 1분 지연). CORS_ORIGINS(운영에서 * 금지). POST /dev/mock-scenario(데모 가족·mock 판독기 한정, is_mock 표시). Notion API 엔드포인트 DB 29행 작성. BE main 병합 |
+| R-020 | 2026-10-24 | FE 에이전트 | T-FE3 개발 도구 모의 시나리오·실서버 미확인 경로 확인 (FE `fe/dev-scenario` 11dbecc. 보고는 에이전트 터미널) | ✅ 승인 | 메인 에이전트 확인: tsc 통과, 비밀값 없음. 실서버에서 retake→guardian_notified, remind_retake→recorded, 칸 그대로 2회→guardian_notified, 이중 의심→guardian_notified를 끝까지 확인했고 인계 중복은 없었다(T-BE4 수정 확인). CORS 프록시 없이 동작, 30초 주기 갱신. FE main 병합. 확인 못 한 부분(1분 주기 작업이 만든 무응답 인계의 화면 반영)은 QA 에이전트에게 넘김 |
 
 ## 헌장 변경 이력
 
