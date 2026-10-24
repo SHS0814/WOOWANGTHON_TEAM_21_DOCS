@@ -75,7 +75,7 @@ type CellState = "empty" | "full" | "unclear";              // AI가 본 칸 상
 type ExpectedState = "empty" | "full" | "ignored";            // 서버가 계산한 기대 상태. ignored = 비교 제외 (backend 5.3, 리필 확인 "아니요")
 type DoseState = "scheduled" | "asked" | "reading" | "retake_requested" | "reminded" | "handed_off" | "done";
 type DoseOutcome = "taken" | "not_taken" | "acknowledged";
-type HandoffReason = "no_response" | "unclear" | "unchanged" | "double_suspected" | "refill_unconfirmed";
+type HandoffReason = "no_response" | "unclear" | "unchanged" | "double_suspected" | "refill_unconfirmed" | "refill_overdue";
 type Verdict = "taken" | "not_taken" | "acknowledged" | "refilled" | "not_refilled";
 type Classification = "normal" | "unclear" | "unchanged" | "double_suspected" | "error";
 type UnchangedMode = "remind_then_retake" | "handoff_immediately";  // R-009
@@ -624,7 +624,7 @@ Refill 객체:
 | `recorded` | E7a "고마워요. 저녁 약 기록해 뒀어요." | 정상 |
 | `retake` | E7b "사진이 잘 안 보여요. 한 번만 더 찍어주실래요?" | 첫 번째 애매 (+30분 이내) |
 | `remind_retake` | E7d "약 드실 시간이에요. 드시고 한 번만 더 찍어주실래요?" | 칸 그대로, 첫 번째, `unchanged_mode = remind_then_retake`, +30분 이내 (R-009, C3) |
-| `guardian_notified` | E7c "민수님께 알려드렸어요." | 두 번째 애매·칸 그대로, `handoff_immediately`, 이중 복용 의심, +30분 지난 사진(C3), 판독 한도 초과 |
+| `guardian_notified` | E7c "민수님께 알려드렸어요." | 두 번째 애매·칸 그대로, `handoff_immediately`, 이중 복용 의심, +30분 지난 사진(C3), 판독 한도 초과, **이번 주기에 이미 쓴 칸이 대상 칸인데 비어 보임** (R-014: `refill_unconfirmed`에 묶이거나 `refill_overdue`. 재촬영 없음) |
 
 - 어떤 경우에도 서버는 의료적 지시를 내리지 않는다. 문구는 앱 템플릿이다
 - `is_mock: true`면 E7 화면에도 "모의 결과" 배지를 띄운다
@@ -692,6 +692,7 @@ Refill 객체:
 - 신뢰도 숫자는 응답에 없다 (R-008 C5)
 - 사유별 문구, [전화하기], 한계 문구("칸이 빈 것만 확인했어요. 드셨는지는 직접 확인해 주세요")는 앱 템플릿이다. 전화번호는 서버가 갖지 않는다 (폰 연락처 사용)
 - `reason = refill_unconfirmed`이면 `allowed_verdicts = ["refilled", "not_refilled"]`. 앱은 "약통을 채우셨나요?" [네, 채웠어요] [아니요]를 보여준다
+- `reason = refill_overdue` (R-014)이면 `allowed_verdicts = ["taken", "not_taken", "acknowledged"]`. 이번 주기(마지막 기준선 이후)에 이미 쓴 칸이 다시 대상 칸이 됐는데 약통이 채워지지 않은 상태라 오늘 복용을 확인할 수 없는 경우다. 앱 문구 예: "약통이 비어 있어 이번 약은 확인할 수 없어요. 약통을 채워 주세요"
 
 ### 3.22 `POST /handoffs/{id}/verdict` — 보호자 판정 (G5, MVP 5)
 - 권한: `guardian`
@@ -703,8 +704,8 @@ Refill 객체:
 - `200`: 갱신된 Handoff 객체
 - 효과:
   - `taken` / `not_taken` / `acknowledged` → 복약 건 `done`, `outcome_source = "guardian"`, `decided_by` 기록 ("민수 판정" 표시)
-  - `refilled` → 그 판독으로 새 기준선 생성 (source `refill_check`, backend 5.4). 응답의 `dose_event`는 바뀌지 않는다
-  - `not_refilled` → 확인 요청을 닫고, 그 판독에서 **차 있던 지난 칸들을 비교 제외(`ignored`)로 바꾼다** (R-010 3번). 다음 리필 등록 전까지 같은 원인으로 다시 묻지 않는다. 앱은 G5에 "약통을 새로 채우면 리필 등록을 해 주세요" 한 줄을 보여준다
+  - `refilled` → 그 판독으로 새 기준선 생성 (source `refill_check`, backend 5.4). 이 확인 요청이 복약 건에 묶여 있고(R-014, 이미 쓴 칸) 대상 칸이 비어 보였으면 그 건은 `done(taken)`, `outcome_source = "guardian"`. 묶이지 않은 확인 요청이면 `dose_event`는 바뀌지 않는다
+  - `not_refilled` → 확인 요청을 닫고, 그 판독에서 **차 있던 지난 칸들을 비교 제외(`ignored`)로 바꾼다** (R-010 3번). 복약 건에 묶인 확인 요청이었으면 그 건은 판정 대기로 남는다 (R-014): 같은 건에 `refill_overdue` 인계를 새로 만들어(푸시 없음) [드심]/[안 드심]/[확인]을 받는다. 다음 리필 등록 전까지 같은 원인으로 다시 묻지 않는다. 앱은 G5에 "약통을 새로 채우면 리필 등록을 해 주세요" 한 줄을 보여준다
 - 오류: `404 not_found`, `409 handoff_already_resolved` (다른 보호자가 먼저 판정함. `details`에 현재 `verdict`, `verdict_by`), `422 verdict_not_allowed`
 
 ### 3.23 `GET /photos/{id}` — 사진 서명 URL 새로 받기
@@ -744,7 +745,7 @@ Refill 객체:
         "open_handoffs": 1,
         "pending": 0
       },
-      "handoffs_by_reason": { "no_response": 0, "unclear": 1, "unchanged": 0, "double_suspected": 0, "refill_unconfirmed": 0 },
+      "handoffs_by_reason": { "no_response": 0, "unclear": 1, "unchanged": 0, "double_suspected": 0, "refill_unconfirmed": 0, "refill_overdue": 0 },
       "all_normal": false,
       "refill": { "needs_refill": false, "remaining_cells": 5,
                   "covered_until": { "date": "2026-10-30", "weekday": 3, "time_of_day": "evening", "dose_time": "19:00" } },
@@ -756,6 +757,8 @@ Refill 객체:
 }
 ```
 - `final: false`면 아직 끝나지 않은 기간 (오늘, 이번 주)이라 실시간 계산값이다
+- `items`는 오래된 순이다. 기간은 하루 요약 최대 31일, 주간 요약 최대 12주 (넘으면 `422 validation_error`). 주간 요약의 `from`은 그 주 월요일로 맞춘다
+- `refill`은 기간과 관계없이 **지금** 약통 상태다 (`GET /pillboxes/current`의 `refill_status`와 같은 값)
 - `pending`: 아직 복약 시각 전이거나 진행 중인 건
 - `all_normal`: 모든 건이 AI 정상 판독(`taken_ai`)이고 열린 인계가 없으면 true → G4 "오늘 2번 모두 정상", G6 "이번 주 14번 중 14번 정상"
 - 문장은 앱이 만든다. 서버는 숫자만 준다
