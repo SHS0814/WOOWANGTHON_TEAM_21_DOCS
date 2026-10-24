@@ -1,7 +1,7 @@
 # 백엔드 설계
 
 - 작성일: 2026-10-24
-- 상태: 🟡 조건부 승인 (R-007). 조건 C1~C5와 사용자 결정 R-009를 반영함. 반영 내용 검토 요청: `docs/reviews/requests/20261024-api-contract.md`
+- 상태: 🟡 조건부 승인 (R-007, R-010). 조건 C1~C5, 사용자 결정 R-009, R-010 결정(애매한 지점 16개)을 반영함. 검토 요청: `docs/reviews/requests/20261024-api-contract.md`
 - 전제 결정: 헌장 9장, `REVIEW_LOG.md` R-001 ~ R-009
 - API 계약서: `docs/design/api.md`
 
@@ -74,13 +74,13 @@ ID와 비밀번호는 없다. **기기 토큰**이 유일한 인증 수단이다
 
 | 테이블 | 주요 컬럼 | 비고 |
 |---|---|---|
-| `families` | id, elder_display_name, summary_push_enabled(기본 false), summary_push_time(기본 21:00), photo_retention_days(기본 90), **unchanged_mode(`remind_then_retake` 기본 / `handoff_immediately`)**, created_at | 설정은 보호자가 앱에서 바꿈 (R-006, R-009) |
+| `families` | id, elder_display_name, summary_push_enabled(기본 false), summary_push_time(기본 21:00), photo_retention_days(기본 90), **unchanged_mode(`remind_then_retake` 기본 / `handoff_immediately`)**, is_demo(기본 false, R-010 10번), created_at | 설정은 보호자가 앱에서 바꿈 (R-006, R-009) |
 | `devices` | id, family_id, role(`elder`/`guardian`), display_name, platform, token_hash, push_token, consent_at, consent_text_version, revoked_at, last_seen_at | `last_seen_at`은 선택 기능 8(연락두절)에 쓸 수 있음 |
 | `pairing_codes` | id, family_id, kind(`elder`/`guardian`), code_hash, short_code_hash, expires_at, used_at | |
 | `pillboxes` | id, family_id, layout(JSON), registered_photo_id, confirmed_at, active | layout은 4.1 참고 |
 | `schedule_slots` | id, family_id, weekday, time_of_day(`morning`/`noon`/`evening`/`bedtime`), dose_time, cell_id | 하나의 복약 시각이 약통의 한 칸에 대응 |
-| `refills` | id, family_id, pillbox_id, filled_at, filled_by_device_id, **photo_id, baseline_reading_id, baseline_cells(JSON), source(`registration`/`guardian_photo`/`refill_check`)** | **기준선 (C1).** 5장 참고 |
-| `dose_events` | id, family_id, slot_id, scheduled_at, state, outcome, outcome_source(`ai`/`guardian`), retake_count, reminded_at, resolved_at | 6장 상태 흐름 |
+| `refills` | id, family_id, pillbox_id, filled_at, filled_by_device_id, **photo_id, baseline_reading_id, baseline_cells(JSON), ignored_cells(JSON), source(`registration`/`guardian_photo`/`refill_check`)** | **기준선 (C1).** 5장 참고 |
+| `dose_events` | id, family_id, slot_id, scheduled_at, state, outcome, outcome_source(`ai`/`guardian`), retake_count, reminded_at, resolved_at, is_simulated | 6장 상태 흐름 |
 | `photos` | id, family_id, dose_event_id(nullable), refill_id(nullable), path, taken_at, uploaded_at, uploaded_by_device_id | 디스크 경로만 저장 |
 | `readings` | id, photo_id, kind(`layout`/`cells`), provider, model, is_mock, cells(JSON), classification, raw_response, latency_ms, error, created_at | AI 판독 결과 원본. `is_mock`은 UI 표시에 사용 |
 | `handoffs` | id, dose_event_id, reason(`no_response`/`unclear`/`unchanged`/`double_suspected`/**`refill_unconfirmed`**), notified_at, verdict, verdict_by_device_id, verdict_at | verdict 값은 사유별로 다름 (7.2) |
@@ -121,7 +121,7 @@ ID와 비밀번호는 없다. **기기 토큰**이 유일한 인증 수단이다
 
 ### 5.3 같은 원인으로 다시 인계하지 않는다 (C2)
 놓친 칸은 다음 복약 때도 계속 "차 있음"으로 보인다. 이미 인계됐거나 `not_taken`으로 판정된 건의 칸은 이후 비교에서 빼서, 같은 칸 때문에 다시 인계되지 않게 한다.
-- R-007 C2는 "기대 = 차 있음"으로 바꾸라고 했다. 이 문서는 **비교 제외**로 적었다. 놓친 약을 나중에 드셔서 칸이 비게 되면 "기대 = 차 있음"에서는 이중 복용 의심으로 다시 인계되기 때문이다. 검토 요청 애매한 지점 1번
+- R-007 C2는 "기대 = 차 있음"이었으나 **비교 제외**로 확정했다 (R-010 1번). 놓친 칸을 나중에 비우는 건 그 끼니의 늦은 복용이지 이중 복용이 아니다
 - 같은 리필 미기록 의심(5.4)도 확인 요청이 열려 있는 동안 다시 만들지 않는다
 
 ### 5.4 리필 기록 없이 칸이 다 차 있을 때 (C1)
@@ -130,8 +130,8 @@ ID와 비밀번호는 없다. **기기 토큰**이 유일한 인증 수단이다
 - 처리: 이중 복용이나 불일치로 분류하지 않는다. 대상 칸만 평소대로 판단한다 (비었으면 정상, 차 있으면 칸 그대로)
 - 보호자에게 "약통을 채우셨나요?" 확인을 **1회** 요청한다 (`handoffs.reason = refill_unconfirmed`, 푸시 1건)
   - "네, 채웠어요" → 그 사진의 판독 결과로 새 기준선을 만든다 (source=`refill_check`, filled_at = 사진 촬영 시각)
-  - "아니요" → 기준선은 그대로 두고 확인 요청만 닫는다. 이후 처리는 검토 요청 애매한 지점 3번
-- 대상 칸 외에 일부 칸만 기대와 다르면(예: 지난 칸 하나만 차 있음) 지금은 "애매"로 처리한다. 검토 요청 애매한 지점 2번
+  - "아니요" → 확인 요청을 닫고, 그 판독에서 차 있던 지난 칸들을 비교 제외(`refills.ignored_cells`)로 바꾼다. 다음 리필 등록 전까지 같은 원인으로 다시 묻지 않는다 (R-010 3번)
+- **대상 칸 외에 일부 칸만 기대와 다르면**(예: 지난 칸 하나만 차 있음) 재촬영하지 않는다. 대상 칸이 정상이면 정상 기록이다. 불일치는 판독의 `attention`과 하루 요약·G7의 "약통 상태가 기록과 달라요"에만 남긴다. 푸시도 없다 (R-010 2번). 단, 기대상 차 있어야 할 칸이 비어 있으면 이중 복용 의심이다
 
 ## 6. 복약 건 상태 흐름
 
@@ -145,7 +145,7 @@ scheduled ──(복약 시각)──▶ asked ──(사진 업로드)──▶
 분류:
   ├─ 정상 (대상 칸 비어 있음 + 나머지 칸이 기대와 일치 + 신뢰도 충분)
   │     ▶ done(taken). 알림 없음, 요약에만 반영
-  ├─ 애매 (신뢰도 부족, `unclear` 칸, 판독 실패, 5.4 밖의 일부 불일치)
+  ├─ 애매 (대상 칸 신뢰도 부족·`unclear`, 다른 칸 `unclear`, 판독 실패)
   │     ▶ retake_requested ─(재촬영)─▶ reading
   │        재촬영 후에도 애매 ▶ handed_off(unclear) → 보호자 판정
   ├─ 칸 그대로 (대상 칸이 차 있음)  ← R-009 가족 설정 unchanged_mode 로 분기
@@ -167,6 +167,7 @@ handed_off ──(보호자 판정 또는 확인)──▶ done(taken / not_take
 - 서버 cron은 1분마다 `asked`, `retake_requested`, `reminded` 상태로 기한을 넘긴 건을 찾는다
 - 앱이 다시 열리면 서버 상태를 받아 로컬 알림을 다시 맞춘다. 이미 답한 건의 재질문은 취소한다
 - **늦은 사진 (C3):** 복약 시각 +30분이 지난 뒤 올라온 사진에는 안내(E7d)도 재촬영 요청도 하지 않는다. 정상이 아니면 바로 인계하고 화면에는 "○○님께 알려드렸어요"만 띄운다. 이미 `handed_off(no_response)`인 건에 사진이 늦게 오면, 그 인계 건에 사진과 판독을 붙이고 다시 알리지는 않는다 (검토 요청 애매한 지점 4번)
+- **복약 시각 전 사진:** `scheduled` 건의 사진은 복약 시각 60분 전부터만 받는다 (R-010 13번)
 - **판독 실패·한도 초과:** AI 호출이 실패하면 "애매"로 처리한다 (원칙 5). 가족당 하루 판독 한도(30회)를 넘으면 판독하지 않고 바로 `handed_off(unclear)`로 넘긴다
 
 ## 7. 인계 규칙 (R-006, R-009에서 사용자 확정)
@@ -182,6 +183,8 @@ handed_off ──(보호자 판정 또는 확인)──▶ done(taken / not_take
 | 칸 그대로 | **보호자 설정 (R-009).** 기본 "1회 안내 후 재촬영": "약 드실 시간이에요" 1회 안내 후 재촬영, 그래도 그대로이거나 15분 안에 재촬영이 없으면 인계. 선택 "바로 인계" | 15분은 기본값. 안내는 **복약 시각 +30분 이내에만** (C3). 복약 시각 알림과 같은 내용이라 의료 조언에 해당하지 않음 |
 | 이중 복용 의심 | 바로 인계 | |
 | 리필 미기록 의심 | 보호자 확인 요청 1회 (5.4) | C1 |
+| 대상 칸 외 일부 불일치 | 재촬영·알림 없음. 요약·G7에만 표시 (5.4) | R-010 2번 |
+| 리필 안내 기준 | 남은 칸 ≤ 하루 복용 횟수 × 2 | R-010 5번. 곱하는 일수는 서버 설정값 `REFILL_THRESHOLD_DAYS` |
 | 이미 인계된 칸 | 이후 비교에서 제외, 다시 인계하지 않음 (5.3) | C2 |
 | 판정 대기 중 보호자 재알림 | 없음 | 원칙 2 (피로 최소화) |
 
@@ -280,12 +283,13 @@ class Reader(Protocol):
   - 실제 가족과 분리된 별도 가족을 만들고, **샘플 약통 사진만** 쓴다
   - 접근 정보(토큰 또는 짝짓기 방법)는 **Public README에 넣지 않고, 비공개인 제출 폼에만** 적는다. README에는 "심사용 접근 정보는 제출 폼 참고"라고만 쓴다
   - 심사 종료(11/21) 후 시연 가족의 토큰을 모두 폐기한다
+- **시연 트리거 (R-010 10번):** `POST /dev/dose-events`는 서버 `DEMO_MODE=true`이고 가족 `is_demo=true`일 때만 동작한다 (그 밖에는 404). 복약 시각만 앞당기고 판독·분류·인계는 실제 흐름을 탄다. 그 건은 `is_simulated=true`로 저장하고 앱은 "시뮬레이션"을 표시한다
 
 ## 13. 미결정 사항
 
 1. "정상" 판정 신뢰도 기준 (정확도 검증 후)
 2. AI 모델 (정확도 검증 후)
 3. 심사위원용 접근 방식의 세부 (토큰을 직접 줄지, 짝짓기 코드를 줄지). 원칙은 12장 C4로 확정
-4. 리필 안내 기준 (남은 칸이 몇 개 이하일 때 안내할지). 검토 요청 애매한 지점 5번
+4. ~~리필 안내 기준~~ → 하루 복용 횟수 × 2로 결정 (R-010 5번)
 5. 사진 보관 기간 설정의 허용 범위
-6. 6자리 예비 코드의 "5회 틀리면 폐기": 틀린 입력이 어떤 코드에 대한 것인지 알 수 없어서 IP별 5회 제한으로 바꿔 적었다. 검토 요청 애매한 지점 7번
+6. ~~6자리 예비 코드 시도 제한~~ → IP별 10분 5회 실패로 결정 (R-010 7번)

@@ -29,6 +29,7 @@
 | R-011 | 2026-10-24 | 사용자 | AI 판독 모델 비교 검증 계획 | ✅ 사용자 결정 | GPT, Claude, 로컬 오픈소스 모델을 같은 실사진 데이터로 비교한다. BE 저장소의 AI 브랜치(`ai/model-eval`)에서 진행한다. **데이터(실사진)가 준비되면 시작한다.** 그전까지는 기록만 해 둔다. 계획: `design/ai-model-eval-plan.md` |
 | R-012 | 2026-10-24 | T-FE1 (FE 작업 에이전트) | Expo 화면 골격 (`reviews/requests/20261024-fe-screen-skeleton.md`) | ✅ 승인 | FE main에 병합. 다음 작업에서 반영: G5에서 `bbox`가 없으면 사진을 격자로 나누지 말고 별도 격자 그림 위에 강조 / 추가 필드 3개는 넣지 않고 계약서 값으로 대체 |
 | R-013 | 2026-10-24 | 사용자 | 작업 에이전트 직접 알림 | ✅ 사용자 결정 | 작업 에이전트가 완료·막힘·검토 요청 시 사용자를 거치지 않고 메인 에이전트 터미널에 `superset terminals send`로 직접 알린다 (`REVIEW_PROTOCOL.md`) |
+| R-014 | 2026-10-24 | T-BE2 (BE 작업 에이전트) | T-BE2a 중간 체크포인트 + 결정 요청 (`reviews/requests/20261024-be-checkpoint-t-be2a.md`) | ✅ 승인 | 짝짓기~리필 API 승인, BE main 병합, FE 연동 시작. 결정: 이번 주기에 이미 쓴 칸이 다시 대상 칸이면 절대 정상으로 기록하지 않는다. 다른 칸이 차 있으면 `refill_unconfirmed`로, 아니면 새 사유 `refill_overdue`로 보호자에게 넘긴다. 어르신은 E7c |
 
 ## 헌장 변경 이력
 

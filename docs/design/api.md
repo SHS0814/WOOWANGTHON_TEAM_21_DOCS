@@ -1,7 +1,7 @@
 # API 계약서
 
 - 작성일: 2026-10-24
-- 상태: 검토 요청 중 (`docs/reviews/requests/20261024-api-contract.md`)
+- 상태: 🟡 조건부 승인 (R-010). R-010 결정(애매한 지점 2·3·5·9·10·13)을 반영함. 검토 요청: `docs/reviews/requests/20261024-api-contract.md`
 - 근거: `docs/design/backend.md` (R-007 조건 C1~C5, R-009 반영), UI 설계 `reviews/requests/20261024-ui-ux-screen-design.md` (R-008 조건 반영)
 - 대상: FE(Expo 앱)와 BE(FastAPI). **FE는 이 문서만 보고 모의 데이터를 만들 수 있어야 한다.** 예시 JSON은 그대로 모의 데이터로 써도 된다
 
@@ -72,7 +72,7 @@ FE 타입 정의에 그대로 옮길 수 있게 TypeScript 표기로 적는다.
 type Role = "elder" | "guardian";
 type TimeOfDay = "morning" | "noon" | "evening" | "bedtime";
 type CellState = "empty" | "full" | "unclear";              // AI가 본 칸 상태
-type ExpectedState = "empty" | "full" | "ignored";            // 서버가 계산한 기대 상태. ignored = 비교 제외 (backend 5.3)
+type ExpectedState = "empty" | "full" | "ignored";            // 서버가 계산한 기대 상태. ignored = 비교 제외 (backend 5.3, 리필 확인 "아니요")
 type DoseState = "scheduled" | "asked" | "reading" | "retake_requested" | "reminded" | "handed_off" | "done";
 type DoseOutcome = "taken" | "not_taken" | "acknowledged";
 type HandoffReason = "no_response" | "unclear" | "unchanged" | "double_suspected" | "refill_unconfirmed";
@@ -157,6 +157,7 @@ interface DoseEvent {
   retake_deadline_at: string | null;  // reminded·retake_requested일 때만
   photos: Photo[];              // 이 건의 사진, 오래된 순
   is_mock: boolean;             // 이 건의 판독 중 하나라도 모의면 true
+  is_simulated: boolean;        // 시연 트리거(3.27)로 시각을 앞당긴 건. true면 앱은 "시뮬레이션" 표시 (R-010 10번)
   latest_reading: Reading | null;   // 보호자만. 어르신 응답에서는 항상 null
   handoff: HandoffBrief | null;     // 보호자만. 어르신 응답에서는 항상 null
 }
@@ -236,7 +237,8 @@ interface Device {
 {
   "elder_display_name": "어머니",
   "guardian_display_name": "민수",
-  "platform": "android"
+  "platform": "android",
+  "is_demo": false
 }
 ```
 ```json
@@ -249,6 +251,7 @@ interface Device {
 }
 ```
 - 검증: 이름은 1~20자. 오류 `422 validation_error`, `429 rate_limited`
+- `is_demo`: (선택, 기본 false) 심사·시연용 가족 (backend 12장 C4). 서버가 `DEMO_MODE=true`일 때만 true로 만들 수 있다. 아니면 `422 validation_error`. 만든 뒤에는 바꿀 수 없다
 
 ### 3.3 `POST /pairing-codes` — 연결 코드 발급 (G1 QR, 보호자 초대)
 - 권한: `guardian`
@@ -341,7 +344,8 @@ interface Device {
       { "device_id": "d-g2", "display_name": "민지" }
     ],
     "has_pillbox": true,
-    "has_schedule": true
+    "has_schedule": true,
+    "is_demo": false
   },
   "server": {
     "timezone": "Asia/Seoul",
@@ -352,7 +356,8 @@ interface Device {
     },
     "reader_is_mock": true,
     "ai_external_transfer": false,
-    "consent_text_version": "v1"
+    "consent_text_version": "v1",
+    "demo_mode": false
   }
 }
 ```
@@ -360,6 +365,7 @@ interface Device {
 - `reader_is_mock`: true면 앱 상단에 **"모의 판독 (실제 AI 아님)"** 띠를 항상 띄운다 (UI 설계 5장)
 - `ai_external_transfer`: 서버가 외부 AI(Claude API)로 사진을 보내는 설정이면 true. E1 동의 화면에 그 줄을 넣는다 (R-008 C4)
 - 어르신 화면의 "민수"는 `family.guardians[0].display_name`을 쓴다. 보호자가 여럿이면 표시 방식은 FE가 정한다 (예: "민수님")
+- `family.is_demo`와 `server.demo_mode`가 둘 다 true일 때만 앱이 시연 버튼(3.27)을 보여준다
 - 해제된 토큰이면 `401 token_revoked` → 앱은 저장된 토큰을 지우고 첫 화면으로 간다
 
 ### 3.7 `GET /devices` — 기기 목록 (G8)
@@ -454,12 +460,20 @@ interface Device {
     "covered_until": { "date": "2026-10-30", "weekday": 3, "time_of_day": "evening", "dose_time": "19:00" },
     "needs_refill": false,
     "threshold_cells": 4
+  },
+  "pillbox_mismatch": {
+    "detected": true,
+    "cell_ids": ["r0c1"],
+    "reading_id": "rd-am",
+    "detected_at": "2026-10-24T08:12:34+09:00"
   }
 }
 ```
 - `remaining_cells`: 기대 상태 기준으로 앞으로 드실 약이 남은 칸 수
 - `covered_until`: 남은 약으로 갈 수 있는 마지막 복약 → G7 "목요일 저녁까지 남았어요". 남은 칸이 없으면 `null`
-- `needs_refill`: `remaining_cells <= threshold_cells`. 기준값 기본은 미정 (backend 13장 4번). 모의 데이터는 4로 쓴다
+- `needs_refill`: `remaining_cells <= threshold_cells`
+- `threshold_cells` = **하루 복용 횟수 × 2** (R-010 5번). 하루 복용 횟수는 일정에서 요일별 복약 수의 최댓값. 곱하는 일수(2)는 서버 설정값 `REFILL_THRESHOLD_DAYS`이고 보호자 설정은 없다. 일정이 없으면 0
+- `pillbox_mismatch` (R-010 2번): 마지막 리필 이후 **가장 최근 복약 판독**에서 대상 칸 외에 기대와 다른 칸이 있었는지. `detected: true`면 G7에 "약통 상태가 기록과 달라요"를 보여준다. 어르신 재촬영이나 푸시는 없다. 판독이 없으면 `detected: false`, 나머지 `[]`/`null`. 새 리필을 등록하면 초기화된다
 - 약통이 없으면 `404 pillbox_required`
 
 ### 3.13 `GET /schedule` — 복약 일정 ★추가
@@ -561,6 +575,7 @@ Refill 객체:
       "photos": [ { "id": "p-am", "taken_at": "2026-10-24T08:12:30+09:00",
                     "url": "https://…/api/v1/photo-files/p-am?exp=…&sig=…", "url_expires_at": "2026-10-24T21:05:00+09:00" } ],
       "is_mock": true,
+      "is_simulated": false,
       "latest_reading": null,
       "handoff": null
     },
@@ -574,7 +589,7 @@ Refill 객체:
       "ask_times": ["2026-10-24T19:00:00+09:00", "2026-10-24T19:10:00+09:00", "2026-10-24T19:20:00+09:00"],
       "handoff_at": "2026-10-24T19:30:00+09:00",
       "retake_deadline_at": null,
-      "photos": [], "is_mock": false, "latest_reading": null, "handoff": null
+      "photos": [], "is_mock": false, "is_simulated": false, "latest_reading": null, "handoff": null
     }
   ],
   "open_handoff_count": null,
@@ -592,8 +607,8 @@ Refill 객체:
   - `photo`: 이미지 파일 (JPEG/PNG/HEIC, 최대 10MB)
   - `taken_at`: (선택) 촬영 시각
   - `client_upload_id`: (선택) 앱이 만든 UUID. 네트워크 오류로 다시 보낼 때 같은 값을 쓰면 서버는 판독을 다시 하지 않고 처음 결과를 돌려준다
-- 받을 수 있는 상태: `asked`, `retake_requested`, `reminded`, 그리고 늦은 사진용으로 `handed_off(no_response)`. `scheduled`(복약 시각 전)도 받는다 (미리 드신 경우)
-- **판독이 끝날 때까지 기다렸다가 응답한다** (최대 60초. E6 "확인하고 있어요"를 그동안 띄움)
+- 받을 수 있는 상태: `asked`, `retake_requested`, `reminded`, 그리고 늦은 사진용으로 `handed_off(no_response)`. `scheduled`(복약 시각 전)는 **복약 시각 60분 전부터만** 받는다 (R-010 13번). 그보다 이르면 `409 event_not_open`. 이 경로를 위한 별도 화면은 만들지 않는다
+- **판독이 끝날 때까지 기다렸다가 응답한다** (최대 60초. E6 "확인하고 있어요"를 그동안 띄움). 60초가 넘으면 앱은 문구를 "확인이 오래 걸려요"로 바꾸고, 응답이 오면 그 결과 화면으로 넘어간다 (R-010 9번)
 ```json
 200
 {
@@ -614,6 +629,7 @@ Refill 객체:
 - 어떤 경우에도 서버는 의료적 지시를 내리지 않는다. 문구는 앱 템플릿이다
 - `is_mock: true`면 E7 화면에도 "모의 결과" 배지를 띄운다
 - 판독 실패(AI 오류)는 오류 응답이 아니라 애매로 처리해서 `retake` 또는 `guardian_notified`로 돌려준다
+- **대상 칸이 정상이면, 지난 칸 일부가 기대와 달라도 `recorded`다** (R-010 2번). 다른 칸의 불일치는 판독의 `attention`, `GET /pillboxes/current`와 요약의 `pillbox_mismatch`에만 남는다. 대상 칸이 애매하면 기존대로 `retake`
 - 늦은 사진이 정상이면 `recorded`를 돌려주지만 보호자 인계 건은 열린 채로 두고 사진만 붙인다 (`late_photo: true`). 다시 알리지는 않는다
 - 오류: `404 not_found`, `409 event_not_open` (`done`이거나 다른 사유로 인계된 건), `409 reading_in_progress` (같은 건을 판독 중), `413 photo_too_large`, `415 unsupported_media`
 
@@ -688,7 +704,7 @@ Refill 객체:
 - 효과:
   - `taken` / `not_taken` / `acknowledged` → 복약 건 `done`, `outcome_source = "guardian"`, `decided_by` 기록 ("민수 판정" 표시)
   - `refilled` → 그 판독으로 새 기준선 생성 (source `refill_check`, backend 5.4). 응답의 `dose_event`는 바뀌지 않는다
-  - `not_refilled` → 확인 요청만 닫는다
+  - `not_refilled` → 확인 요청을 닫고, 그 판독에서 **차 있던 지난 칸들을 비교 제외(`ignored`)로 바꾼다** (R-010 3번). 다음 리필 등록 전까지 같은 원인으로 다시 묻지 않는다. 앱은 G5에 "약통을 새로 채우면 리필 등록을 해 주세요" 한 줄을 보여준다
 - 오류: `404 not_found`, `409 handoff_already_resolved` (다른 보호자가 먼저 판정함. `details`에 현재 `verdict`, `verdict_by`), `422 verdict_not_allowed`
 
 ### 3.23 `GET /photos/{id}` — 사진 서명 URL 새로 받기
@@ -732,7 +748,9 @@ Refill 객체:
       "all_normal": false,
       "refill": { "needs_refill": false, "remaining_cells": 5,
                   "covered_until": { "date": "2026-10-30", "weekday": 3, "time_of_day": "evening", "dose_time": "19:00" } },
-      "includes_mock": true
+      "includes_mock": true,
+      "includes_simulated": false,
+      "pillbox_mismatch": false
     }
   ]
 }
@@ -742,6 +760,8 @@ Refill 객체:
 - `all_normal`: 모든 건이 AI 정상 판독(`taken_ai`)이고 열린 인계가 없으면 true → G4 "오늘 2번 모두 정상", G6 "이번 주 14번 중 14번 정상"
 - 문장은 앱이 만든다. 서버는 숫자만 준다
 - `includes_mock`: 기간 안에 모의 판독이 하나라도 있으면 true → 요약 옆에 "모의 결과 포함" 표시
+- `includes_simulated`: 기간 안에 시연 트리거로 만든 건(`is_simulated`)이 있으면 true → "시뮬레이션 포함" 표시
+- `pillbox_mismatch`: 기간 안의 복약 판독 중 대상 칸 외 불일치가 있었으면 true → 하루 요약에 "약통 상태가 기록과 달라요" (R-010 2번)
 
 ### 3.26 `GET /settings`, `PUT /settings` — 설정 (G8)
 - 권한: `guardian`
@@ -766,6 +786,19 @@ PUT 요청
 - 바뀐 설정은 바로 다음 판독·요약부터 적용된다
 - 오류: `422 validation_error`
 
+### 3.27 `POST /dev/dose-events` — 시연 트리거 ★추가 (R-010 10번)
+- 권한: `any`. **서버 `DEMO_MODE=true`이고 가족이 `is_demo=true`일 때만 동작한다. 그 밖에는 `404 not_found`** (경로가 없는 것처럼 응답)
+- 용도: 5분 시연에서 복약 시각을 기다리지 않도록, 오늘의 복약 건 하나를 **지금 시각으로 앞당겨** 연다. 판독·분류·인계는 실제 흐름을 그대로 탄다
+```json
+요청
+{ "slot_id": "s-fri-pm" }
+```
+- `slot_id`: 오늘 요일의 일정 칸. 오늘 그 칸의 복약 건이 아직 `scheduled`이면 그 건을, 없으면 새로 만든다
+- 서버는 `scheduled_at`을 지금으로 바꾸고 `is_simulated: true`, 상태를 `asked`로 둔다. `ask_times`, `handoff_at`도 지금 기준으로 다시 계산된다
+- `201`: DoseEvent (부른 기기 역할의 형태). 어르신 앱은 응답을 받으면 바로 E4를 띄운다
+- 앱은 `is_simulated: true`인 건의 화면(E4~E7, E8, G4~G6)에 **"시뮬레이션"**을 표시한다
+- 오류: `404 not_found` (데모가 아님, 없는 slot_id), `409 event_already_started` (오늘 그 칸의 건이 이미 `asked` 이후), `422 validation_error` (오늘 요일의 칸이 아님)
+
 ---
 
 ## 4. 화면별 데이터 출처 (UI 설계 대조)
@@ -782,6 +815,7 @@ UI 설계(R-008 조건 반영)의 모든 화면이 필요한 데이터를 얻을
 | E4 복약 시간 질문 | 시간대("저녁"), 호칭, 로컬 알림 시각 (C5) | `GET /dose-events/today` `slot.time_of_day`, `ask_times`; `GET /schedule` + `GET /me` `timing` (오프라인 대비) |
 | E5 촬영 → E6 판독 중 | 업로드 대상 건 id | 위 `items[].id` → `POST /dose-events/{id}/photo` |
 | E7a / E7b / E7c / E7d | 어떤 화면인지, 모의 여부 | `POST …/photo` 응답 `result`, `is_mock` |
+| 시연 "지금 약 시간" (R-010 10번) | 시연 가능 여부, 시뮬레이션 표시 | `GET /me` `family.is_demo`·`server.demo_mode` → `POST /dev/dose-events`, `DoseEvent.is_simulated` |
 | E8 나 약 먹었나? | 시간대별 기록, 시각, 사진 | `GET /dose-events/today` `elder_status`, `taken_at`, `photos[].url` |
 | 모의 판독 띠 | 서버가 모의 판독 중인지 | `GET /me` `server.reader_is_mock` |
 | 연결 해제 감지 | 토큰 무효 | 모든 API의 `401 token_revoked` |
@@ -802,6 +836,7 @@ UI 설계(R-008 조건 반영)의 모든 화면이 필요한 데이터를 얻을
 | "AI 판독" / "민수 판정" 구분 | 결과 출처, 판정자 이름 | `DoseEvent.outcome_source`, `decided_by.display_name` |
 | G6 기록 (하루·주간) | 집계, 건별 기록 | `GET /summaries`, `GET /dose-events?from=&to=` |
 | G7 리필 (남은 칸, "목요일 저녁까지") | 남은 칸, 마지막으로 갈 수 있는 복약 | `GET /pillboxes/current` `refill_status` |
+| G7·하루 요약 "약통 상태가 기록과 달라요" (R-010 2번) | 대상 칸 외 불일치 | `GET /pillboxes/current` `pillbox_mismatch`, `GET /summaries` `pillbox_mismatch` |
 | G7 [약통 채웠어요 + 사진 찍기] (R-008 C3) | 기준선 판독, 확인이 필요한 칸 | `POST /refills` → 필요하면 `PUT /refills/{id}/baseline` |
 | G8 설정: 호칭, 요약 푸시, 사진 보관, **칸 그대로 처리 방식 (R-009)** | | `GET/PUT /settings` |
 | G8 설정: 시각 | | `GET/PUT /schedule` |
@@ -835,7 +870,8 @@ UI 설계(R-008 조건 반영)의 모든 화면이 필요한 데이터를 얻을
 | 404 | `pillbox_required` | (`GET /pillboxes/current`) 약통 없음 | G2로 |
 | 409 | `pillbox_required` | (일정·리필) 약통 먼저 등록 | G2로 |
 | 409 | `last_guardian` | 마지막 보호자 해제 시도 | |
-| 409 | `event_not_open` | 사진을 받을 수 없는 상태의 복약 건 | 어르신: E3로, `GET /dose-events/today` 다시 |
+| 409 | `event_not_open` | 사진을 받을 수 없는 상태의 복약 건 (복약 시각 60분 전보다 이른 사진 포함) | 어르신: E3로, `GET /dose-events/today` 다시 |
+| 409 | `event_already_started` | (시연 트리거) 오늘 그 칸의 건이 이미 진행됨 | |
 | 409 | `reading_in_progress` | 같은 건을 판독 중 | E6 유지 후 다시 조회 |
 | 409 | `handoff_already_resolved` | 다른 보호자가 먼저 판정 | 상세 다시 조회 |
 | 409 | `refill_not_latest` | 최근 리필이 아님 | |
