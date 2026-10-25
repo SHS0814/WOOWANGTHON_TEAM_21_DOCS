@@ -129,3 +129,17 @@ Q-011(웹·API는 되는데 네이티브만 업로드가 안 됨) 때문에, 회
 | U11 | 재촬영 (애매 → [다시 찍기]) | 두 번째 업로드도 서버 도달 |
 | U12 | E8 늦은 사진 (오늘 무응답 인계 건, 전날 carried_over 건) | E7a, 인계 `late_photo=true`, E8 ✓ |
 | U13 | 보호자 약통 등록·리필 | `POST /pillboxes/detect` 200, `POST /pillboxes` 201, `POST /refills` 201 |
+
+- 시작 전 확인: 에뮬레이터를 스냅샷에서 부팅하면 이전에 설치한 APK가 바뀌어 있을 수 있다. `adb shell dumpsys package com.anonymous.woowangfe | grep lastUpdateTime`으로 내 빌드인지 보고, 아니면 `adb install -r android/app/build/outputs/apk/debug/app-debug.apk`
+- 같은 날 여러 건을 시연 트리거로 열 때는 한 번에 하나씩 연다. 어르신 홈은 가장 이른 열린 건을 E4로 보여준다 (R-022)
+
+### 5.6 알림 준비 상태 보고와 보호자 경고 (R-032, T-BE6·T-FE10)
+
+| ID | 시나리오 | 기대 | 환경 |
+|---|---|---|---|
+| S18 | API: 보고 없음 → 경고 없음, ready 계산, 보호자 기기 보고 제외, 해제 기기 제외, 동의 전 보고, 검증 | api.md 2.7·3.17·3.29 | `test_07_notification_status.py` |
+| N40 | 짝짓기 뒤 첫 보고 | 권한이 다 있으면 `ready: true`, G4 경고 없음 | 🔧 |
+| N41 | 정확한 알람 권한 끄기 → 앱 다시 열기 | `exact_alarm_allowed: false`, 30초 안에 G4 한 줄, G8 "알람 및 리마인더" 안내와 보고 시각 | 🔧 + 웹 보호자 |
+| N42 | 알림 권한 끄기 → 앱 다시 열기 | `notifications_allowed: false`, G8 "알림을 허용해 주세요" | 🔧 + 웹 보호자 |
+| N43 | 다시 켜고 앱으로 돌아오기 | `ready: true`, 경고 사라짐 | 🔧 |
+
