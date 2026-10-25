@@ -123,4 +123,4 @@
 |---|---|---|
 | 앱 | Expo (React Native + TypeScript), 앱 하나에 어르신/보호자 역할 분기 | 2026-10-24 |
 | 백엔드 | 자체 서버, Python 3.12 + FastAPI, PostgreSQL 16 (SQLAlchemy 2), 예약 작업은 서버 프로세스 안의 1분 반복 처리(고정 주기, 지연·잠자기 감지 로그), Docker Compose. 사용자 PC에서 Cloudflare Tunnel로 공개 (GPU: GTX 1660 Super 6GB). 설계: `docs/design/backend.md`, `docs/design/api.md` | 2026-10-24 |
-| AI 판독 모델 | 미정. 저가 모델이 방향. GPT, Claude, 로컬 오픈소스 모델을 같은 실사진 데이터로 비교 검증해서 결정한다 (계획: `docs/design/ai-model-eval-plan.md`) | |
+| AI 판독 모델 | **우선 OpenAI GPT 저가 비전 모델로 실제 판독을 작동시킨다** (2026-10-25 사용자 결정. 구체 모델은 시험 실행으로 정함). GPT·Claude·로컬 모델 비교 검증은 작동 뒤 여유가 있으면 추가로 한다 (계획: `docs/design/ai-model-eval-plan.md`) | |
