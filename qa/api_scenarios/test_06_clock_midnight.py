@@ -72,7 +72,8 @@ def test_q007_open_event_carried_over_after_midnight(c, crossed):
         assert item["carried_over"] is True and item["date"] == day1
         assert body["items"][0]["id"] == ev["id"]  # 앞쪽
         assert all(i["carried_over"] is False for i in body["items"] if i["date"] == day2)
-        assert body["next_event"] and body["next_event"]["id"] == ev["id"]
+        # next_event 는 "다음 약"이라 전날 건을 가리키지 않는다 (BE dose.py, FE elder/index.tsx 가 같은 해석)
+        assert body["next_event"] is None or body["next_event"]["id"] != ev["id"]
 
 
 def test_q007_finished_event_not_carried_over(c, crossed):
@@ -84,7 +85,11 @@ def test_q007_finished_event_not_carried_over(c, crossed):
 
 
 def test_q007_upload_after_midnight_to_previous_day_event(c, crossed):
-    """서버는 자정 뒤에도 전날 asked 건의 사진을 받아 기록한다. 기록 뒤에는 carried_over 목록에서 빠진다."""
+    """서버는 자정 뒤에도 전날 asked 건의 사진을 받아 기록한다.
+
+    R-024: 자정 뒤 찍어 기록된 전날 건도 6시간 안에는 오늘 목록에 남는다 (올리자마자 빠지면
+    E8 이 "기록 없음"을 보여 이중 복용을 부를 수 있음). api.md 3.17 문구에는 아직 없다.
+    """
     fams, evs, day1, _ = crossed
     f, ev = fams[1], evs[1]
     f.c = c
@@ -92,5 +97,7 @@ def test_q007_upload_after_midnight_to_previous_day_event(c, crossed):
     assert r.status_code == 200, r.text
     assert r.json()["result"] == "recorded"
     assert r.json()["dose_event"]["date"] == day1
-    items = f.eget("/dose-events/today").json()["items"]
-    assert ev["id"] not in [i["id"] for i in items]
+    items = {i["id"]: i for i in f.eget("/dose-events/today").json()["items"]}
+    assert ev["id"] in items, "자정 뒤 기록한 전날 건이 바로 오늘 목록에서 빠짐 (R-024)"
+    assert items[ev["id"]]["carried_over"] is True
+    assert items[ev["id"]]["elder_status"] == "recorded"
