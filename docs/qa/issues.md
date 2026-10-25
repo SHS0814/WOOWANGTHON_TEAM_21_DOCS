@@ -1,4 +1,4 @@
-# QA 이슈 (T-QA1, T-QA1b, T-QA2)
+# QA 이슈 (T-QA1, T-QA1b, T-QA2, T-QA3)
 
 - 원본은 이 파일이다. 같은 내용을 Notion 이슈 DB에 한 행씩 올린다 (보고자: QA 에이전트)
 - 대상: 처음 보고 BE main `dec9623`, FE main `342a0bb`. 회귀 확인(T-QA2) BE main `b13a127` (T-BE5, R-024), FE main `29124b2` (T-FE4, R-022)
@@ -16,8 +16,11 @@
 | Q-006 | G5 "칸 그대로" 설명이 안내 후 재촬영 기한 초과 건에서 안내 사실을 빠뜨림 | 낮음 | FE | 5-1 | ✅ 확인됨 (`test_q006` 통과, 화면 G5 안내 문구) |
 | Q-007 | 전날 끝나지 않은 복약 건이 자정이 지나면 어르신 "오늘" 목록에서 사라져 사진을 찍을 수 없음 | 보통 | BE (필드) → FE (화면) | 5-3 | ✅ 확인됨 (clock `test_q007_*` 3개 통과, 화면 E4·E8 "어젯밤 자기 전") |
 | Q-008 | 무응답 인계가 기한보다 약 11분 늦게 생긴 일이 1회 있음 (원인 조사) | 낮음 | BE | 5-5 | ✅ 확인됨 (실행 환경 문제로 닫음: 맥 유휴 잠자기, R-024. BE 지연·잠자기 로그, deploy.md 절전 끄기. `test_q008` 지연 47·27·7초) |
-| Q-009 | 오늘 건이 무응답 인계되면 어르신 앱에서 늦은 사진을 올릴 길이 없음 (전날 건은 됨) | 보통 | FE (설계 판단 필요) | 5-3, 5-5 | 열림 |
-| Q-010 | 자정 무렵 시각을 "오전 12시"로 읽어 줌 (정오는 "오후 12시") | 낮음 | FE | 5-3 | 열림 |
+| Q-009 | 오늘 건이 무응답 인계되면 어르신 앱에서 늦은 사진을 올릴 길이 없음 (전날 건은 됨) | 보통 | FE (설계 판단 필요) | 5-3, 5-5 | ✅ 확인됨 (R-026 결정·T-FE7 `e23f262`. 개발 빌드 실서버: E8 "드셨으면 약통 사진을 찍어 주세요" + [사진 찍기] → E7a, E8 ✓. E3 안내 문장. 복용 권유 없음) |
+| Q-010 | 자정 무렵 시각을 "오전 12시"로 읽어 줌 (정오는 "오후 12시") | 낮음 | FE | 5-3 | ✅ 확인됨 (T-FE7. `spokenTime` 00:00 "밤 12시", 12:00 "낮 12시", 12:30 "낮 12시 30분") |
+| Q-011 | Android 개발 빌드에서 어르신 사진 업로드가 서버에 닿지 않음 ("사진을 보내지 못했어요") | 높음 | FE (T-FE9, P0) | 핵심 흐름 차단 | ✅ 확인됨 (FE `7f53291`, R-031. 개발 빌드에서 어르신 4가지·재촬영·E8 늦은 사진, 보호자 등록·리필 업로드 모두 서버 도달) |
+| Q-012 | 일정을 바꿔도 어르신 폰 알림은 앱을 다시 시작할 때까지 옛 시각에 울림 | 보통 | FE | 5-2, 5-3 | 열림 |
+| Q-013 | 기기 시간대가 서울이 아니면 어르신 화면의 날짜·시각이 기기 시각으로 나옴 ("저녁 오전 3시") | 낮음 | FE | 5-3 | 열림 |
 
 ---
 
@@ -147,3 +150,60 @@
 - 기대: 한국어 일상 표현 "밤 12시"·"낮 12시" (또는 "자정"·"정오")처럼 헷갈리지 않는 말
 - 실제: `spokenTime`이 0시를 "오전 12시", 12시를 "오후 12시"로 만든다. 치매 어르신에게 "오전 12시"는 낮으로 들릴 수 있다
 - 근거: `_targets/FE/src/lib/time.ts:18-24`. E3·E4·E8·G4·G5 모두 같은 함수를 쓴다
+
+## Q-011 Android 개발 빌드에서 어르신 사진 업로드가 서버에 닿지 않음
+
+- 심각도: **높음** (핵심 흐름 차단: 어르신 폰 → AI → 보호자 폰. 메인 에이전트 지정)
+- 담당: FE (T-FE9, P0. 원인 조사와 수정)
+- 위반: 헌장 7장 "어르신 폰 → AI → 보호자 폰 흐름이 실제로 끝까지 작동". 원칙 위반은 아님
+- 발견: T-QA3, 2026-10-25 13:49~13:52 KST. 웹(http 모드)에서는 같은 서버로 업로드가 된다(T-QA1·T-QA2, API 테스트는 httpx). **네이티브 앱에서 실서버로 사진을 올린 것은 이번이 처음**이다
+- 재현 환경
+  - Mac (Apple Silicon), Android SDK `~/Library/Android/sdk`, JDK 21 (Microsoft OpenJDK 21.0.11)
+  - 에뮬레이터 AVD `Medium_Phone`: `sdk_gphone16k_arm64`, **Android 17 (API 37)**, 시간대 Asia/Seoul. 창 없이 실행: `emulator -avd Medium_Phone -no-window -no-audio -no-boot-anim -no-snapshot-save`
+  - FE main `425ca96` (T-FE8). 빌드: `_targets/FE`에서 `npm install` 뒤
+    `EXPO_PUBLIC_API_MODE=http EXPO_PUBLIC_API_BASE_URL=http://10.0.2.2:18200/api/v1 EXPO_PUBLIC_CREATE_DEMO_FAMILY=true CI=1 npx expo run:android --port 8298` (BUILD SUCCESSFUL 2m18s, debug APK, Metro 8298)
+  - BE main `b13a127`, `_targets/BE`에서:
+    `DATABASE_URL=sqlite:///…/dev.db PHOTO_DIR=…/photos-dev DEMO_MODE=true DAILY_READING_LIMIT=1000 REASK_OFFSETS_MIN=[1,2] NO_RESPONSE_HANDOFF_MIN=4 RETAKE_WAIT_MIN=7 uv run --no-sync uvicorn app.main:create_app --factory --host 127.0.0.1 --port 18200 --log-config <uvicorn.access INFO 설정>`
+- 재현 단계
+  1. 데모 가족·4×7 약통·일정을 API로 만들고 어르신 6자리 코드 발급 (`qa/api_scenarios` 도우미와 같은 방식)
+  2. 앱: 어르신 폰으로 쓰기 → 6자리 입력 → 동의 → 알림 권한 허용 → 홈. 여기까지 서버에 `POST /pair`, `POST /consent`, `GET /me`·`/dose-events/today`·`/schedule`이 정상 도달
+  3. 보호자 토큰으로 `POST /dev/dose-events` (저녁 칸) → 앱 홈이 E4 → [사진 찍기] → 카메라 권한 "앱 사용 중 허용" → 에뮬레이터 가상 카메라 미리보기 정상 → [찍기]
+  4. E6 "확인하고 있어요" 잠깐 뒤 **"사진을 보내지 못했어요. 한 번만 더 찍어주실래요?"** (`elder/result/[id]` kind=`error`). 두 번 시도 모두 같음 (13:49:58, 13:51:24)
+- 관찰한 것
+  - 서버 access 로그에 `POST /api/v1/dose-events/{id}/photo` 줄이 **없다**. 같은 시간대 앱의 `GET /api/v1/dose-events/today` (30초 주기), `GET /schedule`, `GET /me`는 200으로 찍힌다. 서버 오류 로그도 없다 (413·415 같은 거절도 아님. 요청 자체가 안 옴)
+  - DB `photos`에 그 건의 사진 없음, 복약 건은 `asked` 그대로
+  - 카메라는 사진을 저장했다: `adb shell run-as com.anonymous.woowangfe ls -l cache/Camera/` → `9badc2cb-….jpg` 18468 B (13:49), `b401520f-….jpg` 18346 B (13:51). expo-camera 58.0.12는 `Uri.fromFile(...)`로 `file://` URI를 돌려준다 (`CameraViewModule.kt:292`)
+  - logcat(앱 PID): CameraX 정상 열림·닫힘, `ImageReader … abandonLocked: ConsumerBase is abandoned!` (카메라 종료 때 흔한 메시지), 네트워크 오류 로그 없음. Metro 로그에도 JS 오류 없음 (`elder/reading/[id].tsx`가 오류를 잡아 kind=`error`로만 보낸다 → 원인 메시지가 남지 않음)
+  - 같은 앱의 JSON POST(`/pair`, `/consent`)는 도달하므로 네트워크·cleartext·주소 문제는 아니고, **multipart 요청(또는 그 전 단계: 사진 URI 전달, `photoForm`)** 에서 실패하는 것으로 보인다
+  - Hermes 디버거(Metro `/inspector/debug`)로 JS 오류를 직접 보려 했으나 연결이 바로 닫혀 확인하지 못했다
+- 확인해 볼 것 (QA 추정, 판단은 FE)
+  1. `reading/[id].tsx` catch의 실제 오류 (`no_photo`인지 `network_error`인지와 메시지)
+  2. `PillboxCamera`의 `ready`(onCameraReady)가 false라 `pic`이 undefined인 경로 (`uri` 없음 → `photoForm`이 `no_photo`) — 단 사진 파일은 저장됐다
+  3. RN 0.88 Android `FormData` + `{uri, name, type}` 파일 파트 + `fetch(..., {signal})` 조합
+  4. 실기기에서도 같은지 (에뮬레이터 한정 여부)
+- 영향: 이 빌드로는 어르신이 사진을 올릴 수 없어 정상 기록·재촬영·이중 의심 판정이 모두 안 되고, 결국 무응답 인계로 끝난다. QA 알림 항목 중 사진 업로드가 필요한 N14(사진 뒤 남은 재질문 취소), N25(재촬영 알림, 실서버)와 Q-009 E8 늦은 사진의 실서버 확인이 막힘 → 모의 서버 모드 개발 빌드로 대신 확인
+- 스크린샷(로컬, 커밋 안 함): `_targets/run/shots/android/b09-camera.png`, `b10-e7b-retake.png`(실제 화면은 "사진을 보내지 못했어요")
+- **원인과 수정 (R-031, FE `7f53291`):** Expo SDK 58의 전역 `fetch`(expo/fetch)가 RN식 `{uri}` FormData 파일 파트를 지원하지 않음 → expo-file-system `File`로 보냄. 개발 빌드 재빌드 없이 JS만 바뀜
+- **확인 (T-QA3, 2026-10-25 14:27~14:41):** 같은 에뮬레이터·서버에서 Metro만 다시 불러와 확인. 어르신 정상(E7a)·애매(E7b)→재촬영 정상·칸 그대로(E7d)→다시 그대로(E7c)·이중 의심(E7c), E8 늦은 사진(오늘 무응답 인계 건 → E7a, 인계 `late_photo=true`, E8 ✓), 보호자 약통 등록(`POST /pillboxes/detect` 200, `POST /pillboxes` 201), 리필(`POST /refills` 201). 서버 access 로그에 모두 기록됨 → **확인됨**
+
+## Q-012 일정을 바꿔도 어르신 폰 알림은 앱을 다시 시작할 때까지 옛 시각에 울림
+
+- 심각도: 보통
+- 담당 추정: FE
+- 위반 원칙: 5장 2 (바뀐 시각에 물어보지 못해 무응답 인계가 생김), 5장 3 (어르신은 앱을 다시 시작하지 않는다). 계획 N17
+- 재현 (개발 빌드, 에뮬레이터 API 37, FE `7f53291`, BE `b13a127`): 어르신 앱이 홈(E3)에 떠 있는 상태에서 보호자가 `PUT /schedule`로 내일 아침 08:00 → 09:00 변경 (14:32:36)
+  - 70초 뒤 (오늘 목록 30초 주기 갱신 두 번 지남): `dumpsys alarm` 내일 알림이 여전히 08:00·08:01·08:02
+  - 앱 강제 종료 후 다시 열기: 09:00·09:01·09:02로 바뀜
+- 기대 (계획 N17): 다음 주기 갱신(30초) 안에 바뀐 일정으로 다시 예약, 지운 칸 알림은 취소
+- 실제: 일정(`GET /schedule`)은 화면이 처음 붙을 때 한 번만 읽고 주기 갱신하지 않는다. 오늘 건은 서버 `ask_times`라 맞지만, 내일부터 7일치(R-028 N18)는 옛 일정 그대로 울린다. 어르신 폰은 보통 앱을 계속 켜 두므로 며칠씩 이어질 수 있다
+- 근거: `_targets/FE/src/notify/ElderNotificationSync.tsx` (`schedule`은 `useApiData(..., [ok])`로 한 번, `today`만 `pollMs: POLL_MS`), `src/notify/elderSchedule.ts` (planAhead는 받은 schedule로만 계산)
+
+## Q-013 기기 시간대가 서울이 아니면 어르신 화면의 날짜·시각이 기기 시각으로 나옴
+
+- 심각도: 낮음 (어르신 폰 시간대가 서울이 아닌 경우는 드묾. 여행, 잘못된 설정)
+- 담당 추정: FE
+- 위반 원칙: 5장 3 (어르신이 이해하는 말). 계획 N22의 화면 쪽
+- 재현: 개발 빌드에서 `adb shell service call alarm 3 s16 America/Los_Angeles` 후 앱 다시 열기 → E3 "10월 24일 토요일 / 다음 약은 저녁 **오전 3시**" (서울 19:00 = LA 03:00)
+- 기대: 알림 예약(R-028 N22로 서울 기준 고정, 확인됨)과 같게 화면의 날짜·요일·시각도 서울 기준. 또는 기기 시간대가 다를 때 안내
+- 실제: 알림은 서울 19:00에 맞게 울리지만, E3·E4·E8·G4·G5의 날짜·시각은 기기 시간대(`Date.getHours()` 등)로 표시된다. "저녁 약"이 "오전 3시"로 보인다. `doseName`도 기기 날짜로 오늘·어제를 비교해 "어젯밤" 표기가 어긋날 수 있다
+- 근거: `_targets/FE/src/lib/time.ts` (`spokenTime`, `longDate`, `weekdayLong`이 기기 시간대 기준), `src/lib/doseLabel.ts` (`dateKey(today)` 기기 날짜). 서울 기준 함수 `src/lib/seoulTime.ts`가 이미 있음
