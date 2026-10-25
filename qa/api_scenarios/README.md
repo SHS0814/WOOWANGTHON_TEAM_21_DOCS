@@ -3,7 +3,7 @@
 QA 에이전트의 테스트 코드다. 제품 코드가 아니다. `_targets/BE`(BE main 복사본) 서버에 HTTP로만 요청한다.
 
 ```bash
-qa/api_scenarios/run.sh            # default + fast
+qa/api_scenarios/run.sh            # default + fast + clock
 qa/api_scenarios/run.sh default -k s08
 ```
 
@@ -15,6 +15,8 @@ qa/api_scenarios/run.sh default -k s08
 | `test_03_errors.py` | S14 오류 코드, 이슈 재현 `test_q001`, `test_q002` |
 | `test_04_timing_fast.py` | fast 프로필 전용: S06 무응답, S07 늦은 사진, 기한 초과, C3, 판독 한도 |
 | `test_05_mock_scenario.py` | `POST /dev/mock-scenario`로 결정적 시나리오, T-BE4 회귀(동시성·CORS), `test_q005` |
+| `test_06_clock_midnight.py` | clock 프로필 전용: 자정 경계 `test_q007_*` |
+| `clock_server.py` | QA 전용 실행기. 서버 시각을 `QA_CLOCK_START`에서 시작하게 옮겨 띄운다 (제품 코드 변경 없음) |
 | `logging.json` | 서버 로그에 앱 INFO(푸시 기록)를 남기는 uvicorn 설정 |
 
 - `test_q00N_*`는 이슈 재현 테스트다. 이슈가 고쳐지면 통과한다
