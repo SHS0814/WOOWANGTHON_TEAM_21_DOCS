@@ -16,11 +16,12 @@
 | 시각 당기기 | 시연 트리거 `POST /dev/dose-events` (복약 시각 = 지금, `is_simulated=true`) |
 | 판독 결과 지정 | ① `POST /dev/mock-scenario` (T-BE4, api.md 3.28) ② MockReader가 사진 해시로 결과를 정하는 점을 이용해, 원하는 칸 상태가 나오는 사진 바이트를 찾아 올림 (`find_photo`, 칸별 상태까지 지정 가능) |
 | 기한 경과 | 서버에 시각을 옮기는 HTTP 수단이 없다 (`app/clock.py`는 프로세스 안 테스트 전용). **fast 프로필** 서버(`NO_RESPONSE_HANDOFF_MIN=1`, `RETAKE_WAIT_MIN=1`)에서 실제로 기다린다. T-BE4 이후 인계는 1분 예약 작업이 하므로 기한 + 최대 1분 |
+| 서버 시각 옮기기 | **clock 프로필** (T-QA1b): `qa/api_scenarios/clock_server.py`가 `app.clock.clock.now`를 오프셋으로 바꿔 서버 시각을 오늘 23:59:00에서 시작한다 (제품 코드 변경 없음). 자정 경계용 |
 | 보호자 푸시 확인 | 서버 로그(`RecordingPushSender`의 `push(skip) to <기기>`)를 보호자 기기 id로 센다 |
 
 ## 2. 시나리오
 
-표의 "자동"은 `qa/api_scenarios`의 테스트 이름이다. P = 기본 프로필, F = fast 프로필.
+표의 "자동"은 `qa/api_scenarios`의 테스트 이름이다. P = 기본 프로필, F = fast 프로필, C = clock 프로필.
 
 | ID | 시나리오 | 확인할 것 (기대 결과) | 근거 | 자동 |
 |---|---|---|---|---|
@@ -39,9 +40,11 @@
 | S13 | 시연 트리거 (`is_simulated`) | 데모 가족만(그 밖 404), `asked`·`is_simulated=true`, 기한 재계산, 같은 칸 두 번 409, 다른 요일 422. 어르신·보호자 응답 모두 표시 | R-010 10번, 6장 | P `test_s13_*` |
 | S14 | 오류 코드 | 오류 형식 `{"error":{code,message,details}}`. 401(없음·형식·없는 토큰), 403 `forbidden_role`, 404, 409(`pillbox_required`, `event_not_open`, `refill_not_latest`, `handoff_already_resolved`, `event_already_started`), 410(`code_used`), 413, 415, 422(`validation_error`, `verdict_not_allowed`), 429(`rate_limited`+`Retry-After`, `daily_reading_limit`), 사진 서명 403, 복약 60분 전 사진 창 | api 1.5, 5장, R-010 13번 | P `test_s14_*`, F `test_s14_daily_*` |
 | S15 | T-BE4 회귀 | 동시 업로드·동시 GET에서 인계 중복 없음, CORS 허용 출처만 통과, mock-scenario는 데모·mock에서만, 사진 1장에만 적용 | R-018, R-019 | P `test_m*` |
+| S16 | 자정 경계 | 전날 끝나지 않은 건(`asked` 등)은 예정 시각 후 6시간 안이면 오늘 목록에 `carried_over: true`, `next_event`가 그 건. 자정 뒤 사진 업로드 가능 | R-021 (Q-007) | C `test_q007_*` |
+| S17 | 무응답 인계 지연 | 기한 + 최대 1분(테스트 기준 75초) 안에 인계 | api.md 1.6, R-021 (Q-008) | F `test_q008` |
 | U01 | 어르신 화면 점검 (FE mock) | E1~E8 문구·글씨·버튼 (아래 점검표) | 원칙 3·6·7, R-008 | 수동 (브라우저) |
 | U02 | 보호자 화면 점검 (FE mock) | G4 처리할 일·상태 한 줄, G5 사유·사진·격자 강조·한계 문구·판정 버튼·모의 배지 | 원칙 1·2·7, R-008 C5 | 수동 |
-| U03 | FE http 모드 연동 | 같은 흐름을 실제 BE(18200)에 붙여서 확인 | R-018 | 수동, T-BE4 이후 |
+| U03 | FE http 모드 연동 | 실제 BE(18200)에 붙여서 G4 무응답 표시, G5 판정, G6, G7, G8 해제 → 어르신 `token_revoked` 첫 화면 이동 | R-018, R-020 | 수동 |
 
 ## 3. 원칙 점검표
 
@@ -60,6 +63,6 @@
 
 - 실제 AI 판독기(Claude, Ollama): 정확도 검증(R-011) 전이라 mock만
 - 실제 Expo 푸시 발송, 어르신 폰 로컬 알림·전체 화면 알림: 웹·서버만으로는 확인 불가
-- 하루·주간 요약 푸시 시각(`summary_push_time`), 사진 보관 기간 정리(`cleanup`), 자정 일정 생성: 서버 시각을 옮길 수단이 없음
+- 하루·주간 요약 푸시 시각(`summary_push_time`), 사진 보관 기간 정리(`cleanup`): 아직 안 함. clock 프로필로 가능해졌다 (다음 작업 후보)
 - 외부 AI 전송 동의(`consent_incomplete`): mock 판독기에서는 `ai_external_transfer=false`라 재현 불가
 - 시나리오는 "오늘 요일" 일정을 쓰므로 자정 전후 10분에는 돌리지 않는다

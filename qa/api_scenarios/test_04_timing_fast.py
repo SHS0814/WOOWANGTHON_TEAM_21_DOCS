@@ -135,3 +135,28 @@ def test_s14_daily_reading_limit_hands_off(c, timing):
     assert h and h[0]["reason"] == "unclear"
     r = f.gpost("/refills", files={"photo": ("p.png", b"\x89PNG\r\n\x1a\nlim", "image/png")})
     assert r.status_code == 429 and r.json()["error"]["code"] == "daily_reading_limit"
+
+
+def test_q008_no_response_handoff_latency(c, timing):
+    """Q-008: 무응답 인계는 기한 + 최대 1분 안에 생겨야 한다 (api.md 1.6 "최대 1분 늦게").
+
+    1회 관찰된 11분 지연은 결정적으로 재현할 수단이 없다. 이 테스트는 여러 건의 지연을 재서
+    기준(75초)을 넘으면 실패한다. 지연은 notified_at - handoff_at 으로 잰다 (서버 시각끼리 비교).
+    """
+    from datetime import datetime
+
+    fams = []
+    for i in range(3):  # 20초 간격으로 열어 예약 작업 주기의 여러 위치에 걸치게 한다
+        f = make_family(c)
+        fams.append((f, f.trigger("evening")))
+        if i < 2:
+            time.sleep(20)
+    lates = []
+    for f, ev in fams:
+        h = wait_for(lambda f=f: f.handoffs(), timeout=200, every=2)
+        assert h, "인계가 생기지 않음"
+        late = (datetime.fromisoformat(h[0]["notified_at"])
+                - datetime.fromisoformat(ev["handoff_at"])).total_seconds()
+        lates.append(late)
+    print("no_response 지연(초):", lates)
+    assert max(lates) <= 75, f"무응답 인계 지연이 75초를 넘음: {lates}"
