@@ -184,3 +184,24 @@ def test_q005_at_most_one_retake_request(c):
         assert r2 == "guardian_notified", (
             f"{first}→{second}: 두 번째 사진 뒤에도 또 찍어 달라고 함 ({r1}→{r2})"
         )
+
+
+def test_q006_reminded_at_guardian_only(c):
+    """Q-006 (R-021, api.md 2.5): 안내(E7d) 시각은 보호자 응답에만, 어르신 응답은 항상 null."""
+    f = make_family(c)
+    ev = f.trigger("evening")
+    assert f.event(ev["id"])["reminded_at"] is None
+    assert up(f, ev, "unchanged")["result"] == "remind_retake"
+    g = f.event(ev["id"])
+    assert g["reminded_at"], g
+    assert f.event(ev["id"], as_guardian=False)["reminded_at"] is None
+    assert up(f, ev, "unchanged")["result"] == "guardian_notified"
+    d = f.gget(f"/handoffs/{f.handoffs()[0]['id']}").json()
+    assert d["dose_event"]["reminded_at"] == g["reminded_at"]
+    # 안내 없이 바로 인계되는 모드와 정상 건은 null
+    f2 = make_family(c, unchanged_mode="handoff_immediately")
+    ev2 = f2.trigger("evening")
+    up(f2, ev2, "unchanged")
+    assert f2.event(ev2["id"])["reminded_at"] is None
+    for item in f.gget("/dose-events/today").json()["items"]:
+        assert "carried_over" in item and item["carried_over"] is False
