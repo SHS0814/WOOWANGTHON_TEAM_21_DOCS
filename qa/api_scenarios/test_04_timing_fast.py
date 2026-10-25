@@ -86,6 +86,8 @@ def test_s04_reminded_timeout_hands_off_unchanged(c, timing):
     g = wait_for(lambda: (x := f.event(ev["id"]))["state"] == "handed_off" and x)
     assert g and g["handoff"]["reason"] == "unchanged", f.event(ev["id"])["state"]
     assert len(f.handoffs()) == 1
+    # Q-006 (R-021): 안내 후 재촬영 없이 인계된 건도 안내 시각이 보호자에게 보인다 (G5 문구 근거)
+    assert g.get("reminded_at"), "reminded_at 없음 (api.md 2.5)"
 
 
 def test_s03_retake_timeout_hands_off_unclear(c, timing):
@@ -160,3 +162,38 @@ def test_q008_no_response_handoff_latency(c, timing):
         lates.append(late)
     print("no_response 지연(초):", lates)
     assert max(lates) <= 75, f"무응답 인계 지연이 75초를 넘음: {lates}"
+
+
+def test_q004_late_normal_photo_is_recorded_for_elder(c, timing):
+    """Q-004 (R-021, api.md 2.5·3.18): 늦은 정상 사진은 어르신 기준 recorded, taken_at=사진 촬영 시각.
+    보호자 인계는 열린 채(late_photo), outcome 은 판정 전까지 null. not_taken 판정이면 no_record."""
+    fams = [make_family(c) for _ in range(3)]
+    t0 = time.monotonic()
+    evs = [f.trigger("evening") for f in fams]
+    wait_past(t0, 60)
+    for f, ev in zip(fams, evs):
+        assert wait_for(lambda f=f, ev=ev: f.event(ev["id"])["state"] == "handed_off")
+    shot = "2026-10-25T12:00:00+09:00"
+    for i, (f, ev) in enumerate(zip(fams, evs)):
+        r = f.upload(ev["id"], find_photo(NORMAL_EVENING, tag=f"q004-{i}"), taken_at=shot)
+        assert r.json()["result"] == "recorded", r.text
+        e = f.event(ev["id"], as_guardian=False)
+        assert e["elder_status"] == "recorded", f"E7a 는 '기록해 뒀어요'인데 E8 은 {e['elder_status']}"
+        assert e["taken_at"] == shot
+        g = f.event(ev["id"])
+        assert g["state"] == "handed_off" and g["outcome"] is None
+        assert g["handoff"]["reason"] == "no_response" and g["handoff"]["verdict"] is None
+        h = f.handoffs()
+        assert len(h) == 1 and h[0]["late_photo"] is True
+    # 보호자 판정별 어르신 표시
+    for f, ev, verdict, want in zip(fams, evs, ["not_taken", "acknowledged", "taken"],
+                                    ["no_record", "recorded", "recorded"]):
+        h = f.handoffs()[0]
+        r = f.gpost(f"/handoffs/{h['id']}/verdict", json={"verdict": verdict})
+        assert r.status_code == 200, r.text
+        e = f.event(ev["id"], as_guardian=False)
+        assert e["elder_status"] == want, (verdict, e["elder_status"])
+        if verdict == "taken":
+            assert e["taken_at"] == shot  # 판정 시각이 아니라 늦은 사진 시각 (api.md 2.5)
+        if verdict == "not_taken":
+            assert e["taken_at"] is None

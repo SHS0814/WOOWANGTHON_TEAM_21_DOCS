@@ -163,7 +163,10 @@ def test_s14_refill_status_numbers(c):
 
 
 def test_q001_new_schedule_does_not_hand_off_past_times_today(c):
-    """일정을 저장한 시각보다 이른 오늘 복약 시각은 무응답 인계되면 안 된다 (원칙 2)."""
+    """일정을 저장한 시각보다 이른 오늘 복약 시각은 무응답 인계되면 안 된다 (원칙 2).
+
+    api.md 3.14 (R-021): 저장 시각보다 이른 오늘 칸은 오늘 복약 건을 아예 만들지 않는다.
+    """
     n = now_kst()
     if n.hour < 1:
         pytest.skip("자정 직후에는 '오늘 이미 지난 시각'을 만들 수 없음")
@@ -180,6 +183,17 @@ def test_q001_new_schedule_does_not_hand_off_past_times_today(c):
         f"일정 저장 직후 지난 시각({past}) 건이 바로 인계됨: "
         f"{[(i['slot']['dose_time'], i['state']) for i in items]}, 푸시 {len(pushes)}건"
     )
+    assert [i for i in items if i["slot"]["dose_time"] == past] == [], (
+        f"지난 시각({past}) 칸의 오늘 복약 건이 만들어짐: {[(i['slot']['dose_time'], i['state']) for i in items]}"
+    )
+    # 같은 일정의 이후 시각 칸은 오늘 건이 만들어진다 (규칙이 지난 칸에만 걸리는지)
+    later = (n + timedelta(minutes=90)).strftime("%H:%M")
+    if (n + timedelta(minutes=90)).date() == n.date():
+        f.gput("/schedule", json={"slots": [
+            {"weekday": n.weekday(), "time_of_day": "morning", "dose_time": past, "cell_id": "r0c0"},
+            {"weekday": n.weekday(), "time_of_day": "evening", "dose_time": later, "cell_id": "r0c2"}]})
+        items = f.gget("/dose-events/today").json()["items"]
+        assert [i["slot"]["dose_time"] for i in items] == [later], items
 
 
 @pytest.mark.parametrize("field", ["elder_display_name", "guardian_display_name"])

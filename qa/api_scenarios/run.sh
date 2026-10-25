@@ -3,7 +3,7 @@
 #   qa/api_scenarios/run.sh            # 기본 프로필(인계 30분) + fast 프로필(인계 1분) 둘 다
 #   qa/api_scenarios/run.sh default    # 기본 프로필만 (~10초)
 #   qa/api_scenarios/run.sh fast       # 시간 시나리오만 (~9분, 실제로 기다림)
-#   qa/api_scenarios/run.sh clock      # 자정 경계 (서버 시각을 23:59:00 에서 시작, ~2분). clock_server.py 사용
+#   qa/api_scenarios/run.sh clock      # 자정 경계 (서버 시각을 23:58:00 에서 시작, ~2분). clock_server.py 사용
 # 원본 저장소 폴더에서는 아무것도 실행하지 않는다. 남의 프로세스(8000번 등)는 건드리지 않는다.
 set -euo pipefail
 cd "$(dirname "$0")/../.."
@@ -58,7 +58,7 @@ if [ "$what" = all ] || [ "$what" = fast ]; then
 fi
 if [ "$what" = all ] || [ "$what" = clock ]; then
   SERVER_CMD="uv run --no-sync python $ROOT/qa/api_scenarios/clock_server.py"
-  start_server clock DAILY_READING_LIMIT=1000 QA_CLOCK_START="$(TZ=Asia/Seoul date +%Y-%m-%d)T23:59:00+09:00"
+  start_server clock DAILY_READING_LIMIT=1000 QA_CLOCK_START="$(TZ=Asia/Seoul date +%Y-%m-%d)T23:58:00+09:00"
   QA_CLOCK=1 run_pytest clock "clock" "$@" || status=1
   stop_server
   SERVER_CMD="$UVICORN"
