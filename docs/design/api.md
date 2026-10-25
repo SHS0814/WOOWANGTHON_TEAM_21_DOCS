@@ -151,7 +151,8 @@ interface DoseEvent {
   outcome: DoseOutcome | null;
   outcome_source: "ai" | "guardian" | null;   // "AI 판독" / "민수 판정" 구분 표시
   decided_by: { device_id: string; display_name: string } | null;  // outcome_source=guardian일 때
-  taken_at: string | null;      // outcome=taken일 때. AI면 사진 촬영 시각, 보호자 판정이면 판정 시각
+  taken_at: string | null;      // 복용 기록 시각. AI 정상이면 사진 촬영 시각. 늦은 정상 사진(인계 열림, outcome=null)도 사진 촬영 시각 (R-021 Q-004).
+                                //   보호자 판정 taken이면 늦은 사진 시각이 있으면 그 시각, 없으면 판정 시각. not_taken이면 null
   resolved_at: string | null;
   elder_status: "upcoming" | "waiting" | "recorded" | "no_record";  // E8용 단순화 값 (아래 표)
   ask_times: string[];          // 로컬 알림 시각: [복약 시각, 재질문1, 재질문2]. 서버값 (C5)
@@ -160,6 +161,8 @@ interface DoseEvent {
   photos: Photo[];              // 이 건의 사진, 오래된 순
   is_mock: boolean;             // 이 건의 판독 중 하나라도 모의면 true
   is_simulated: boolean;        // 시연 트리거(3.27)로 시각을 앞당긴 건. true면 앱은 "시뮬레이션" 표시 (R-010 10번)
+  carried_over: boolean;        // 전날 건인데 아직 끝나지 않아 오늘 목록에 함께 나온 건 (3.17, R-021 Q-007). 앱은 "어젯밤 취침 약"처럼 날짜를 구분해 보여준다
+  reminded_at: string | null;   // "약 드실 시간이에요" 안내(E7d)를 한 시각. 보호자 응답에서만 채우고 어르신 응답에서는 항상 null (R-021 Q-006)
   latest_reading: Reading | null;   // 보호자만. 어르신 응답에서는 항상 null
   handoff: HandoffBrief | null;     // 보호자만. 어르신 응답에서는 항상 null
 }
@@ -179,8 +182,10 @@ interface HandoffBrief {
 |---|---|---|
 | `upcoming` | `state = scheduled` | "저녁 7시 예정" |
 | `waiting` | `asked`, `reading`, `retake_requested`, `reminded` | "아직 기록이 없어요" |
-| `recorded` | `outcome = taken` (AI든 보호자든) | "아침 ✓ 8시 12분" + 사진 |
+| `recorded` | `outcome = taken` (AI든 보호자든), 또는 **인계 뒤 늦게 온 사진이 정상 판독**이라 `taken_at`이 있는 건 (보호자 판정 전이거나 `acknowledged`여도) (R-021 Q-004) | "아침 ✓ 8시 12분" + 사진 |
 | `no_record` | 그 밖 (`handed_off`, `not_taken`, `acknowledged`) | "아직 기록이 없어요" |
+
+어르신에게 "기록해 뒀어요"(E7a)라고 말한 건은 E8에서도 기록으로 보여야 한다. 그렇지 않으면 이중 복용을 부를 수 있다 (R-021 Q-004). 보호자가 `not_taken`으로 판정하면 `no_record`로 바뀐다.
 
 어르신 화면에는 "안 드셨어요"나 인계 사유를 보여주지 않는다 (원칙 6, 검토 요청 애매한 지점 12번).
 
@@ -508,6 +513,8 @@ interface Device {
 ```
 - `200`: `GET /schedule`과 같은 본문
 - 오늘 남은 `scheduled` 상태 복약 건은 새 일정으로 다시 만든다. 이미 물어본 건(`asked` 이후)은 그대로 둔다
+- **저장 시각보다 이른 오늘 칸은 오늘 복약 건을 만들지 않는다** (R-021 Q-001). 어르신에게 물어본 적이 없으므로 무응답 인계 대상이 아니다. 그 칸은 다음 주 같은 요일부터 시작된다. 약통을 다시 등록해 일정을 새로 저장할 때와 데모 가족 시드도 같다
+- 매일 00:05 복약 건 생성과, 서버 재시작 뒤 늦게 도는 예약 작업은 이 규칙과 무관하게 그날 일정을 모두 만든다 (어르신 폰 로컬 알림이 이미 물어봤을 수 있음)
 - 오류: `409 pillbox_required`, `422 validation_error` (없는 cell_id, 중복)
 
 ### 3.15 `POST /refills` — 약통 채움 + 사진 (G7)
@@ -578,6 +585,8 @@ Refill 객체:
                     "url": "https://…/api/v1/photo-files/p-am?exp=…&sig=…", "url_expires_at": "2026-10-24T21:05:00+09:00" } ],
       "is_mock": true,
       "is_simulated": false,
+      "carried_over": false,
+      "reminded_at": null,
       "latest_reading": null,
       "handoff": null
     },
@@ -591,7 +600,7 @@ Refill 객체:
       "ask_times": ["2026-10-24T19:00:00+09:00", "2026-10-24T19:10:00+09:00", "2026-10-24T19:20:00+09:00"],
       "handoff_at": "2026-10-24T19:30:00+09:00",
       "retake_deadline_at": null,
-      "photos": [], "is_mock": false, "is_simulated": false, "latest_reading": null, "handoff": null
+      "photos": [], "is_mock": false, "is_simulated": false, "carried_over": false, "reminded_at": null, "latest_reading": null, "handoff": null
     }
   ],
   "open_handoff_count": null,
@@ -600,6 +609,7 @@ Refill 객체:
 ```
 - `open_handoff_count`: 보호자만 (가족 전체의 열린 인계 수, G4 "처리할 일" 표시 여부). 어르신은 `null`
 - `next_event`: 아직 `scheduled` 또는 `asked`인 가장 이른 건 (E3 "다음 약 시간"). 없으면 `null`
+- **전날 끝나지 않은 건도 포함한다** (R-021 Q-007). 전날 날짜의 건 중 `asked`·`retake_requested`·`reminded`이거나, 사진 없이 `handed_off(no_response)`인 건을 **예정 시각 후 6시간 안이면** `items` 앞쪽에 넣고 `carried_over: true`로 표시한다. 자정을 넘긴 취침 약도 어르신이 사진을 올릴 수 있게 하기 위해서다 (`POST …/photo`는 지금 규칙대로 받는다). `date`는 원래 날짜 그대로다
 - 어르신 앱은 응답을 받을 때마다 `ask_times`로 로컬 알림을 다시 맞추고, `state`가 `asked`·`retake_requested`·`reminded`가 아닌 건의 알림은 취소한다 (backend 6장)
 - 일정이 없으면 `items: []`
 - 자정 직후에는 1분 예약 작업이 오늘 복약 건을 만들 때까지 `items`가 비어 있을 수 있다
@@ -625,15 +635,17 @@ Refill 객체:
 | `result` | 화면 | 언제 (backend 6장) |
 |---|---|---|
 | `recorded` | E7a "고마워요. 저녁 약 기록해 뒀어요." | 정상 |
-| `retake` | E7b "사진이 잘 안 보여요. 한 번만 더 찍어주실래요?" | 첫 번째 애매 (+30분 이내) |
-| `remind_retake` | E7d "약 드실 시간이에요. 드시고 한 번만 더 찍어주실래요?" | 칸 그대로, 첫 번째, `unchanged_mode = remind_then_retake`, +30분 이내 (R-009, C3) |
+| `retake` | E7b "사진이 잘 안 보여요. 한 번만 더 찍어주실래요?" | 애매, 이 건에서 아직 다시 찍어 달라고 한 적 없음, +30분 이내 |
+| `remind_retake` | E7d "약 드실 시간이에요. 드시고 한 번만 더 찍어주실래요?" | 칸 그대로, 이 건에서 아직 다시 찍어 달라고 한 적 없음, `unchanged_mode = remind_then_retake`, +30분 이내 (R-009, C3) |
+
+**다시 찍어 달라는 요청(`retake`, `remind_retake`)은 종류와 관계없이 한 복약 건에 최대 1회다** (R-021 Q-005). 두 번째 사진도 정상이 아니면 `guardian_notified`다.
 | `guardian_notified` | E7c "민수님께 알려드렸어요." | 두 번째 애매·칸 그대로, `handoff_immediately`, 이중 복용 의심, +30분 지난 사진(C3), 판독 한도 초과, **이번 주기에 이미 쓴 칸이 대상 칸인데 비어 보임** (R-014: `refill_unconfirmed`에 묶이거나 `refill_overdue`. 재촬영 없음) |
 
 - 어떤 경우에도 서버는 의료적 지시를 내리지 않는다. 문구는 앱 템플릿이다
 - `is_mock: true`면 E7 화면에도 "모의 결과" 배지를 띄운다
 - 판독 실패(AI 오류)는 오류 응답이 아니라 애매로 처리해서 `retake` 또는 `guardian_notified`로 돌려준다
 - **대상 칸이 정상이면, 지난 칸 일부가 기대와 달라도 `recorded`다** (R-010 2번). 다른 칸의 불일치는 판독의 `attention`, `GET /pillboxes/current`와 요약의 `pillbox_mismatch`에만 남는다. 대상 칸이 애매하면 기존대로 `retake`
-- 늦은 사진이 정상이면 `recorded`를 돌려주지만 보호자 인계 건은 열린 채로 두고 사진만 붙인다 (`late_photo: true`). 다시 알리지는 않는다
+- 늦은 사진이 정상이면 `recorded`를 돌려주고 **그 건은 어르신 기준 기록된 것으로 본다** (`elder_status = recorded`, `taken_at` = 사진 촬영 시각, R-021 Q-004). 보호자 인계 건은 열린 채로 두고 사진만 붙인다 (`late_photo: true`). 다시 알리지는 않고, 판정은 보호자가 한다 (`outcome`은 판정 전까지 `null`)
 - 오류: `404 not_found`, `409 event_not_open` (`done`이거나 다른 사유로 인계된 건), `409 reading_in_progress` (같은 건을 판독 중), `413 photo_too_large`, `415 unsupported_media`
 
 ### 3.19 `GET /dose-events?from=&to=` — 기간 기록 (G6)
