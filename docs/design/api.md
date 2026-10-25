@@ -645,6 +645,7 @@ Refill 객체:
 - `is_mock: true`면 E7 화면에도 "모의 결과" 배지를 띄운다
 - 판독 실패(AI 오류)는 오류 응답이 아니라 애매로 처리해서 `retake` 또는 `guardian_notified`로 돌려준다
 - **대상 칸이 정상이면, 지난 칸 일부가 기대와 달라도 `recorded`다** (R-010 2번). 다른 칸의 불일치는 판독의 `attention`, `GET /pillboxes/current`와 요약의 `pillbox_mismatch`에만 남는다. 대상 칸이 애매하면 기존대로 `retake`
+- 어르신 앱에서 늦은 사진은 E8("나 약 먹었나?")의 "아직 기록이 없어요" 줄에서 올린다. 홈의 E4는 물어보는 시간 안의 건만 보여준다 (R-026 Q-009)
 - 늦은 사진이 정상이면 `recorded`를 돌려주고 **그 건은 어르신 기준 기록된 것으로 본다** (`elder_status = recorded`, `taken_at` = 사진 촬영 시각, R-021 Q-004). 보호자 인계 건은 열린 채로 두고 사진만 붙인다 (`late_photo: true`). 다시 알리지는 않고, 판정은 보호자가 한다 (`outcome`은 판정 전까지 `null`)
 - 오류: `404 not_found`, `409 event_not_open` (`done`이거나 다른 사유로 인계된 건), `409 reading_in_progress` (같은 건을 판독 중), `413 photo_too_large`, `415 unsupported_media`
 
