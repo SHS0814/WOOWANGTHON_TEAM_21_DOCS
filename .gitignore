@@ -1,3 +1,7 @@
 _targets/
 __pycache__/
 .pytest_cache/
+
+# 실사진 (개인정보: 약봉투에 이름·약국이 찍힐 수 있음, 커밋 금지)
+/data/
+.DS_Store
