@@ -1,4 +1,4 @@
-# QA 이슈 (T-QA1, T-QA1b, T-QA2)
+# QA 이슈 (T-QA1, T-QA1b, T-QA2, T-QA3)
 
 - 원본은 이 파일이다. 같은 내용을 Notion 이슈 DB에 한 행씩 올린다 (보고자: QA 에이전트)
 - 대상: 처음 보고 BE main `dec9623`, FE main `342a0bb`. 회귀 확인(T-QA2) BE main `b13a127` (T-BE5, R-024), FE main `29124b2` (T-FE4, R-022)
@@ -18,6 +18,7 @@
 | Q-008 | 무응답 인계가 기한보다 약 11분 늦게 생긴 일이 1회 있음 (원인 조사) | 낮음 | BE | 5-5 | ✅ 확인됨 (실행 환경 문제로 닫음: 맥 유휴 잠자기, R-024. BE 지연·잠자기 로그, deploy.md 절전 끄기. `test_q008` 지연 47·27·7초) |
 | Q-009 | 오늘 건이 무응답 인계되면 어르신 앱에서 늦은 사진을 올릴 길이 없음 (전날 건은 됨) | 보통 | FE (설계 판단 필요) | 5-3, 5-5 | 열림 |
 | Q-010 | 자정 무렵 시각을 "오전 12시"로 읽어 줌 (정오는 "오후 12시") | 낮음 | FE | 5-3 | 열림 |
+| Q-011 | Android 개발 빌드에서 어르신 사진 업로드가 서버에 닿지 않음 ("사진을 보내지 못했어요") | 높음 | FE (T-FE9, P0) | 핵심 흐름 차단 | 열림 |
 
 ---
 
@@ -147,3 +148,36 @@
 - 기대: 한국어 일상 표현 "밤 12시"·"낮 12시" (또는 "자정"·"정오")처럼 헷갈리지 않는 말
 - 실제: `spokenTime`이 0시를 "오전 12시", 12시를 "오후 12시"로 만든다. 치매 어르신에게 "오전 12시"는 낮으로 들릴 수 있다
 - 근거: `_targets/FE/src/lib/time.ts:18-24`. E3·E4·E8·G4·G5 모두 같은 함수를 쓴다
+
+## Q-011 Android 개발 빌드에서 어르신 사진 업로드가 서버에 닿지 않음
+
+- 심각도: **높음** (핵심 흐름 차단: 어르신 폰 → AI → 보호자 폰. 메인 에이전트 지정)
+- 담당: FE (T-FE9, P0. 원인 조사와 수정)
+- 위반: 헌장 7장 "어르신 폰 → AI → 보호자 폰 흐름이 실제로 끝까지 작동". 원칙 위반은 아님
+- 발견: T-QA3, 2026-10-25 13:49~13:52 KST. 웹(http 모드)에서는 같은 서버로 업로드가 된다(T-QA1·T-QA2, API 테스트는 httpx). **네이티브 앱에서 실서버로 사진을 올린 것은 이번이 처음**이다
+- 재현 환경
+  - Mac (Apple Silicon), Android SDK `~/Library/Android/sdk`, JDK 21 (Microsoft OpenJDK 21.0.11)
+  - 에뮬레이터 AVD `Medium_Phone`: `sdk_gphone16k_arm64`, **Android 17 (API 37)**, 시간대 Asia/Seoul. 창 없이 실행: `emulator -avd Medium_Phone -no-window -no-audio -no-boot-anim -no-snapshot-save`
+  - FE main `425ca96` (T-FE8). 빌드: `_targets/FE`에서 `npm install` 뒤
+    `EXPO_PUBLIC_API_MODE=http EXPO_PUBLIC_API_BASE_URL=http://10.0.2.2:18200/api/v1 EXPO_PUBLIC_CREATE_DEMO_FAMILY=true CI=1 npx expo run:android --port 8298` (BUILD SUCCESSFUL 2m18s, debug APK, Metro 8298)
+  - BE main `b13a127`, `_targets/BE`에서:
+    `DATABASE_URL=sqlite:///…/dev.db PHOTO_DIR=…/photos-dev DEMO_MODE=true DAILY_READING_LIMIT=1000 REASK_OFFSETS_MIN=[1,2] NO_RESPONSE_HANDOFF_MIN=4 RETAKE_WAIT_MIN=7 uv run --no-sync uvicorn app.main:create_app --factory --host 127.0.0.1 --port 18200 --log-config <uvicorn.access INFO 설정>`
+- 재현 단계
+  1. 데모 가족·4×7 약통·일정을 API로 만들고 어르신 6자리 코드 발급 (`qa/api_scenarios` 도우미와 같은 방식)
+  2. 앱: 어르신 폰으로 쓰기 → 6자리 입력 → 동의 → 알림 권한 허용 → 홈. 여기까지 서버에 `POST /pair`, `POST /consent`, `GET /me`·`/dose-events/today`·`/schedule`이 정상 도달
+  3. 보호자 토큰으로 `POST /dev/dose-events` (저녁 칸) → 앱 홈이 E4 → [사진 찍기] → 카메라 권한 "앱 사용 중 허용" → 에뮬레이터 가상 카메라 미리보기 정상 → [찍기]
+  4. E6 "확인하고 있어요" 잠깐 뒤 **"사진을 보내지 못했어요. 한 번만 더 찍어주실래요?"** (`elder/result/[id]` kind=`error`). 두 번 시도 모두 같음 (13:49:58, 13:51:24)
+- 관찰한 것
+  - 서버 access 로그에 `POST /api/v1/dose-events/{id}/photo` 줄이 **없다**. 같은 시간대 앱의 `GET /api/v1/dose-events/today` (30초 주기), `GET /schedule`, `GET /me`는 200으로 찍힌다. 서버 오류 로그도 없다 (413·415 같은 거절도 아님. 요청 자체가 안 옴)
+  - DB `photos`에 그 건의 사진 없음, 복약 건은 `asked` 그대로
+  - 카메라는 사진을 저장했다: `adb shell run-as com.anonymous.woowangfe ls -l cache/Camera/` → `9badc2cb-….jpg` 18468 B (13:49), `b401520f-….jpg` 18346 B (13:51). expo-camera 58.0.12는 `Uri.fromFile(...)`로 `file://` URI를 돌려준다 (`CameraViewModule.kt:292`)
+  - logcat(앱 PID): CameraX 정상 열림·닫힘, `ImageReader … abandonLocked: ConsumerBase is abandoned!` (카메라 종료 때 흔한 메시지), 네트워크 오류 로그 없음. Metro 로그에도 JS 오류 없음 (`elder/reading/[id].tsx`가 오류를 잡아 kind=`error`로만 보낸다 → 원인 메시지가 남지 않음)
+  - 같은 앱의 JSON POST(`/pair`, `/consent`)는 도달하므로 네트워크·cleartext·주소 문제는 아니고, **multipart 요청(또는 그 전 단계: 사진 URI 전달, `photoForm`)** 에서 실패하는 것으로 보인다
+  - Hermes 디버거(Metro `/inspector/debug`)로 JS 오류를 직접 보려 했으나 연결이 바로 닫혀 확인하지 못했다
+- 확인해 볼 것 (QA 추정, 판단은 FE)
+  1. `reading/[id].tsx` catch의 실제 오류 (`no_photo`인지 `network_error`인지와 메시지)
+  2. `PillboxCamera`의 `ready`(onCameraReady)가 false라 `pic`이 undefined인 경로 (`uri` 없음 → `photoForm`이 `no_photo`) — 단 사진 파일은 저장됐다
+  3. RN 0.88 Android `FormData` + `{uri, name, type}` 파일 파트 + `fetch(..., {signal})` 조합
+  4. 실기기에서도 같은지 (에뮬레이터 한정 여부)
+- 영향: 이 빌드로는 어르신이 사진을 올릴 수 없어 정상 기록·재촬영·이중 의심 판정이 모두 안 되고, 결국 무응답 인계로 끝난다. QA 알림 항목 중 사진 업로드가 필요한 N14(사진 뒤 남은 재질문 취소), N25(재촬영 알림, 실서버)와 Q-009 E8 늦은 사진의 실서버 확인이 막힘 → 모의 서버 모드 개발 빌드로 대신 확인
+- 스크린샷(로컬, 커밋 안 함): `_targets/run/shots/android/b09-camera.png`, `b10-e7b-retake.png`(실제 화면은 "사진을 보내지 못했어요")
