@@ -29,7 +29,7 @@
 - 토큰은 43자 base64url 문자열 (256비트). 앱은 `expo-secure-store`에 보관한다. 서버는 해시만 저장한다
 - 서버는 토큰으로 기기·가족·역할을 찾고, **모든 조회를 그 가족으로 제한**한다. 다른 가족의 id를 넣으면 `404 not_found`로 응답한다 (존재 여부를 알려주지 않음)
 - 역할 표기: 각 엔드포인트의 **권한** 줄에 `elder`(어르신 기기), `guardian`(보호자 기기), `any`(둘 다)
-- **어르신 동의 전 제한:** 어르신 기기는 동의(`POST /consent`) 전에는 `GET /me`, `POST /consent`, `PUT /devices/me/push-token`만 쓸 수 있다. 나머지는 `403 consent_required`
+- **어르신 동의 전 제한:** 어르신 기기는 동의(`POST /consent`) 전에는 `GET /me`, `POST /consent`, `PUT /devices/me/push-token`, `PUT /devices/me/notification-status`만 쓸 수 있다. 나머지는 `403 consent_required`
 
 ### 1.3 시간과 날짜
 - 시각(`*_at`)은 ISO 8601, 서울 시간 오프셋 포함: `"2026-10-24T08:12:30+09:00"`. 서버 내부 저장은 UTC
@@ -217,8 +217,17 @@ interface Device {
   consent_at: string | null;    // 어르신만. 보호자는 null
   last_seen_at: string | null;
   is_me: boolean;
+  notification_status: NotificationStatus | null;  // 앱이 보고하기 전이면 null (R-032)
+}
+
+interface NotificationStatus {     // 기기 알림 준비 상태, 3.29로 보고
+  notifications_allowed: boolean;  // 알림 권한
+  exact_alarm_allowed: boolean | null;  // Android 12+ 정확한 알람 권한. iOS·Android 11 이하처럼 해당 없으면 null
+  ready: boolean;                  // notifications_allowed && exact_alarm_allowed !== false (서버가 계산)
+  reported_at: string;             // 마지막 보고 시각
 }
 ```
+- `notification_status`는 모든 Device 응답(`GET /me`, `GET /devices`, `POST /pair` 등)에 들어간다. 보호자 G8은 어르신 기기의 이 값으로 알림 설정 상태를 보여준다
 
 ---
 
@@ -341,7 +350,9 @@ interface Device {
 {
   "device": { "id": "d-e1", "role": "elder", "display_name": "어머니", "platform": "android",
               "paired_at": "2026-10-24T20:03:00+09:00", "consent_at": "2026-10-24T20:04:00+09:00",
-              "last_seen_at": "2026-10-24T21:00:00+09:00", "is_me": true },
+              "last_seen_at": "2026-10-24T21:00:00+09:00", "is_me": true,
+              "notification_status": { "notifications_allowed": true, "exact_alarm_allowed": true,
+                                       "ready": true, "reported_at": "2026-10-24T20:05:00+09:00" } },
   "consent_required": false,
   "family": {
     "id": "f1c0…",
@@ -381,9 +392,12 @@ interface Device {
 200
 { "items": [
   { "id": "d-g1", "role": "guardian", "display_name": "민수", "platform": "android",
-    "paired_at": "2026-10-24T20:00:00+09:00", "consent_at": null, "last_seen_at": "2026-10-24T21:00:00+09:00", "is_me": true },
+    "paired_at": "2026-10-24T20:00:00+09:00", "consent_at": null, "last_seen_at": "2026-10-24T21:00:00+09:00", "is_me": true,
+    "notification_status": null },
   { "id": "d-e1", "role": "elder", "display_name": "어머니", "platform": "android",
-    "paired_at": "2026-10-24T20:03:00+09:00", "consent_at": "2026-10-24T20:04:00+09:00", "last_seen_at": "2026-10-24T20:59:00+09:00", "is_me": false }
+    "paired_at": "2026-10-24T20:03:00+09:00", "consent_at": "2026-10-24T20:04:00+09:00", "last_seen_at": "2026-10-24T20:59:00+09:00", "is_me": false,
+    "notification_status": { "notifications_allowed": true, "exact_alarm_allowed": false,
+                             "ready": false, "reported_at": "2026-10-24T20:05:00+09:00" } }
 ] }
 ```
 해제된 기기는 목록에 없다.
@@ -400,6 +414,7 @@ interface Device {
 { "push_token": "ExponentPushToken[xxxxxxxxxxxxxxxxxxxxxx]" }
 ```
 - `204`. `push_token: null`이면 푸시 해제
+- 알림 준비 상태(알림 권한, 정확한 알람 권한)는 이 경로가 아니라 3.29로 따로 보고한다
 
 ### 3.10 `POST /pillboxes/detect` — 약통 구조 제안 (G2)
 - 권한: `guardian`
@@ -604,10 +619,12 @@ Refill 객체:
     }
   ],
   "open_handoff_count": null,
+  "elder_notification_warning": null,
   "next_event": { "id": "ev-pm", "scheduled_at": "2026-10-24T19:00:00+09:00", "time_of_day": "evening" }
 }
 ```
 - `open_handoff_count`: 보호자만 (가족 전체의 열린 인계 수, G4 "처리할 일" 표시 여부). 어르신은 `null`
+- `elder_notification_warning`: 보호자만 (R-032). 해제되지 않은 어르신 기기 중 하나라도 `notification_status.ready`가 false면 `true` → G4에 **"어르신 폰 알림 설정이 꺼져 있어 알림이 늦을 수 있어요"**를 보여준다. 아직 보고가 없는 기기(`notification_status: null`)는 경고하지 않는다(`false`). 어르신은 `null`
 - `next_event`: 아직 `scheduled` 또는 `asked`인 가장 이른 건 (E3 "다음 약 시간"). 없으면 `null`
 - **전날 끝나지 않은 건도 포함한다** (R-021 Q-007). 전날 날짜의 건 중 `asked`·`retake_requested`·`reminded`이거나, 사진 없이 `handed_off(no_response)`인 건을 **예정 시각 후 6시간 안이면** `items` 앞쪽에 넣고 `carried_over: true`로 표시한다. 자정을 넘긴 취침 약도 어르신이 사진을 올릴 수 있게 하기 위해서다 (`POST …/photo`는 지금 규칙대로 받는다). `date`는 원래 날짜 그대로다
 - 어르신 앱은 응답을 받을 때마다 `ask_times`로 로컬 알림을 다시 맞추고, `state`가 `asked`·`retake_requested`·`reminded`가 아닌 건의 알림은 취소한다 (backend 6장)
@@ -838,6 +855,20 @@ PUT 요청
 - 판독 결과는 `is_mock: true`, `provider: "mock"`으로 저장·표시된다 (헌장 6장)
 - 오류: `404 not_found` (조건 불충족), `422 validation_error` (모르는 시나리오)
 
+### 3.29 `PUT /devices/me/notification-status` — 알림 준비 상태 보고 ★추가 (R-032)
+- 권한: `any` (어르신 동의 전에도 가능. 권한 요청이 동의 화면 전후 어디서든 일어날 수 있어서)
+- 용도: 정확한 알람 권한이 없으면 Android 로컬 알림이 최대 1시간 늦을 수 있다. 무응답 인계 기한(30분)보다 길어서 거짓 무응답 인계가 생길 수 있으므로, 보호자에게 알린다 (원칙 2)
+```json
+요청
+{ "notifications_allowed": true, "exact_alarm_allowed": false }
+```
+- `notifications_allowed`: 알림 권한 허용 여부 (필수, bool)
+- `exact_alarm_allowed`: Android 12+ 정확한 알람(`SCHEDULE_EXACT_ALARM`/`USE_EXACT_ALARM`) 허용 여부. iOS, Android 11 이하처럼 해당 없으면 `null` (필수 키, bool 또는 null)
+- `200`: 저장한 `NotificationStatus` (2.7). 서버는 값과 함께 받은 시각(`reported_at`)을 남긴다. 값이 같아도 `reported_at`은 갱신된다
+- 앱이 보내는 때: 앱 시작, 앱이 앞으로 올 때, 권한 요청·설정 화면에서 돌아온 직후. 값이 바뀌지 않았어도 보내도 된다
+- 보호자 기기도 보낼 수 있지만 `elder_notification_warning`에는 어르신 기기만 반영된다
+- 오류: `422 validation_error` (키 없음, 형식 틀림)
+
 ---
 
 ## 4. 화면별 데이터 출처 (UI 설계 대조)
@@ -858,6 +889,7 @@ UI 설계(R-008 조건 반영)의 모든 화면이 필요한 데이터를 얻을
 | QA: 판독 결과 고정 (R-018) | 다음 사진의 모의 판독 시나리오 | `POST /dev/mock-scenario` (데모 가족·DEMO_MODE·mock 판독기) |
 | E8 나 약 먹었나? | 시간대별 기록, 시각, 사진 | `GET /dose-events/today` `elder_status`, `taken_at`, `photos[].url` |
 | 모의 판독 띠 | 서버가 모의 판독 중인지 | `GET /me` `server.reader_is_mock` |
+| 알림 준비 상태 보고 (R-032) | 알림 권한, 정확한 알람 권한 | `PUT /devices/me/notification-status` |
 | 연결 해제 감지 | 토큰 무효 | 모든 API의 `401 token_revoked` |
 
 ### 4.2 보호자
@@ -870,6 +902,7 @@ UI 설계(R-008 조건 반영)의 모든 화면이 필요한 데이터를 얻을
 | G2 약통 등록 (채운 약통, R-008 C3) | 구조 제안, 시간대 추정, 모의 여부 | `POST /pillboxes/detect` → `POST /pillboxes` (첫 기준선 포함) → 필요하면 `PUT /refills/{id}/baseline` |
 | G2 칸 ↔ 요일·시간대 매핑, G3 복약 시각 | 현재 일정 | `GET /schedule`, `PUT /schedule` |
 | G4 홈 "처리할 일" | 열린 인계 목록 (리필 확인 요청 포함) | `GET /handoffs?status=open`, `GET /dose-events/today` `open_handoff_count` |
+| G4 "어르신 폰 알림 설정이 꺼져 있어 알림이 늦을 수 있어요" (R-032) | 어르신 기기 알림 준비 상태 | `GET /dose-events/today` `elder_notification_warning` |
 | G4 오늘 상태 한 줄 | 오늘 집계 | `GET /summaries?period=day&from=오늘&to=오늘` |
 | G5 인계 상세 | 사유, 사진(재촬영 포함), AI가 본 칸, **애매한 칸 강조 (C5: 숫자 대신 `attention`)**, 대상 칸, 판정 버튼, 모의 여부 | `GET /handoffs/{id}` `reason`, `readings[].photo`, `readings[].cells[].attention`·`bbox`, `layout`, `allowed_verdicts`, `is_mock` |
 | G5 판정 [드심]/[안 드심] | — | `POST /handoffs/{id}/verdict` |
@@ -882,6 +915,7 @@ UI 설계(R-008 조건 반영)의 모든 화면이 필요한 데이터를 얻을
 | G8 설정: 시각 | | `GET/PUT /schedule` |
 | G8 설정: 약통 재등록 | | `POST /pillboxes/detect` → `POST /pillboxes` |
 | G8 설정: 연결 해제, 보호자 목록 | | `GET /devices`, `DELETE /devices/{id}` |
+| G8 어르신 폰 알림 설정 상태 (R-032) | 알림 권한, 정확한 알람 권한, 보고 시각 | `GET /devices` 어르신 기기 `notification_status` |
 | 푸시 수신 | 푸시 토큰 등록 | `PUT /devices/me/push-token` |
 
 ### 4.3 푸시 내용 (서버 → 보호자)
