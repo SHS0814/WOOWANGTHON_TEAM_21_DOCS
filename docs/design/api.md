@@ -411,9 +411,11 @@ interface NotificationStatus {     // 기기 알림 준비 상태, 3.29로 보�
 - 권한: `any` (어르신 동의 전에도 가능)
 ```json
 요청
-{ "push_token": "ExponentPushToken[xxxxxxxxxxxxxxxxxxxxxx]" }
+{ "push_token": "fKx3…:APA91bH…" }
 ```
+- `push_token`: **Android 기기 FCM 등록 토큰** (Firebase Messaging이 앱에 발급하는 문자열, 최대 255자). Expo 푸시 토큰(`ExponentPushToken[…]`)이 아니다. 서버가 FCM HTTP v1로 직접 보낸다 (R-039). iOS는 푸시를 지원하지 않는다
 - `204`. `push_token: null`이면 푸시 해제
+- 앱은 토큰이 바뀔 때마다 다시 등록한다. FCM이 토큰 무효(`UNREGISTERED` 등)를 돌려주면 서버가 그 기기의 토큰을 지운다. 다음에 앱이 등록하면 다시 받는다
 - 알림 준비 상태(알림 권한, 정확한 알람 권한)는 이 경로가 아니라 3.29로 따로 보고한다
 
 ### 3.10 `POST /pillboxes/detect` — 약통 구조 제안 (G2)
