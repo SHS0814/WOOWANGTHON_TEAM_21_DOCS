@@ -39,3 +39,11 @@
 3. Expo 발송(`ExpoPushSender`)은 `PUSH_PROVIDER=expo`로 남겨 두었다. R-039로 쓰지 않으니 지워도 된다. 지우라면 지운다
 4. 기본값은 지시대로 지금과 같은 `recording`이다. 실제 운영 `.env`에는 `PUSH_PROVIDER=fcm`과 `SECRETS_DIR`을 사용자가 넣어야 한다 (deploy.md에 적음)
 5. 발송은 기존처럼 요청 스레드에서 커밋 직후 동기로 한다. FCM v1은 메시지마다 요청 1건이라 보호자 수만큼 요청한다(제한 시간 5초씩). 보호자가 한두 명이라 그대로 두었다
+
+---
+
+## 판정 (메인 에이전트, 2026-10-30): ✅ 승인 — R-040
+
+- pytest 164·ruff 직접 확인, 비밀값 없음. BE main 병합, api.md 3.9 DOCS main 병합
+- backend.md의 Expo 표기는 메인 에이전트가 고쳤다. ExpoPushSender는 남긴다. 기본값 recording 유지
+- 실제 기기 수신은 T-FE11과 함께 확인한다

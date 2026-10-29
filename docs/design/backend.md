@@ -17,7 +17,7 @@
                                                          ├─ 사진 디렉터리 (/data/photos)
                                                          └─ (선택) Ollama + GTX 1660 Super
                      서버 → Claude API (판독, 키는 서버에만 있음)
-                     서버 → Expo Push API (보호자 알림)
+                     서버 → FCM HTTP v1 (보호자 알림, Android만. R-039)
 ```
 
 | 영역 | 선택 |
@@ -27,7 +27,7 @@
 | DB | PostgreSQL 16, SQLAlchemy 2, Alembic |
 | 예약 작업 | APScheduler (서버 프로세스 안에서 실행) |
 | AI | `anthropic` SDK 또는 Ollama. 판독 인터페이스 뒤에서 교체 가능 (8장) |
-| 푸시 | Expo Push API (httpx) |
+| 푸시 | FCM HTTP v1 직접 발송 (httpx, 서비스 계정 JWT는 cryptography). `PUSH_PROVIDER=fcm` (R-039, R-040) |
 | 배포 | Docker Compose (`restart: always`), 기존 Cloudflare Tunnel |
 | 시간대 | 모든 일정은 `Asia/Seoul` 기준으로 계산하고, DB에는 UTC로 저장 |
 
