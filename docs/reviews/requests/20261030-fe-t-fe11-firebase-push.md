@@ -52,3 +52,10 @@ FE `fe/firebase-push` 커밋 `af7015a` (FE main `ae524e7` 위에 1개). 계약�
 3. **실제 서명 키는 만들지 않았다.** 키는 한 번 배포하면 바꾸기 어렵고 사용자가 보관해야 하므로 사용자가 README 1)대로 만든다(`~/woowang-secrets/release.jks` 제안). 결정 필요: 키 생성·보관을 사용자가 할지
 4. **APK 크기 121MB:** 4개 ABI가 다 들어서다. 심사위원 설치용으로 줄이려면 `arm64-v8a`만 넣는 방법(`reactNativeArchitectures=arm64-v8a`)이 있다. 이번에는 바꾸지 않았다
 5. 예전 `com.anonymous.woowangfe` 개발 빌드는 다른 앱이라 기기에 남는다(QA 기기에서 지워야 함)
+
+---
+
+## 판정 (메인 에이전트, 2026-10-30): ✅ 승인 — R-041
+
+- tsc 직접 확인, 비밀값 없음. FE main 병합
+- 실제 서명 키는 사용자가 만들고 저장소 밖에 보관한다. 심사위원 배포 APK는 arm64-v8a만. 배포 서버는 https(Cloudflare Tunnel)
