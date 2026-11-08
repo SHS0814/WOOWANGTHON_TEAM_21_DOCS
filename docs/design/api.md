@@ -648,9 +648,12 @@ Refill 객체:
 {
   "result": "recorded",
   "dose_event": { "…": "DoseEvent (어르신 형태)" },
-  "is_mock": true
+  "is_mock": true,
+  "refill_prompt": false
 }
 ```
+- `refill_prompt` ★추가 (R-071): `result = recorded`이고, 설정 `elder_refill_prompt`가 true이고, 이 기록으로 약통 남은 칸이 0이 되었으면(`needs_refill` 기준과 같은 계산) true. 그 밖에는 항상 false. 어르신 앱은 E7a 아래에 "약통을 채워 주세요" 한 줄을 더 보여 준다. 채운 뒤 다음 사진에서 서버가 채움을 알아채 보호자에게 확인을 묻는다(기존 `refill_unconfirmed` 흐름)
+
 `result` → 어르신 화면:
 
 | `result` | 화면 | 언제 (backend 6장) |
@@ -818,9 +821,11 @@ GET 200
   "summary_push_enabled": false,
   "summary_push_time": "21:00",
   "photo_retention_days": 90,
-  "unchanged_mode": "remind_then_retake"
+  "unchanged_mode": "remind_then_retake",
+  "elder_refill_prompt": false
 }
 ```
+- `elder_refill_prompt` ★추가 (R-071): true면 약통의 마지막 칸을 쓴 정상 기록 뒤 어르신 화면에 "약통을 채워 주세요"를 보여 준다. 기본 false. 보호자 앱은 하루 약통을 등록할 때 true로 저장하고 설정에서 끌 수 있다
 - `PUT`: 바꿀 필드만 보낸다. 응답은 `GET`과 같은 본문
 ```json
 PUT 요청
