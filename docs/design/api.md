@@ -676,6 +676,11 @@ Refill 객체:
 { "from": "2026-10-18", "to": "2026-10-24", "items": [ "DoseEvent (보호자 형태)", "…" ] }
 ```
 - 오류: `422 validation_error` (31일 초과, from > to)
+- **검색 쿼리 (R-051, 선택)** ★추가
+  - `filter`: `exceptions`(인계가 있었거나 `outcome`이 `not_taken`인 건) / `handoff`(인계가 있었던 건) / `not_taken` / `taken`. 없으면 전체
+  - `reason`: `HandoffReason` 하나. 주면 그 사유의 인계가 있었던 건만 (`filter`와 함께 쓰면 둘 다 만족)
+  - `order`: `asc`(기본, 오래된 순) / `desc`(최신순). 정렬 기준은 `scheduled_at`
+  - `filter`나 `reason`이 있으면 기간 최대 **366일**, 없으면 지금처럼 31일
 
 ### 3.20 `GET /handoffs` — 처리할 일 목록 (G4) ★추가
 - 권한: `guardian`
@@ -761,7 +766,7 @@ Refill 객체:
 
 ### 3.25 `GET /summaries` — 하루·주간 요약 (G4 한 줄, G6)
 - 권한: `guardian`
-- 쿼리: `period=day|week`(필수), `from`, `to` (`YYYY-MM-DD`, 기본은 최근 7일 / 최근 4주). 주간은 월~일
+- 쿼리: `period=day|week|total`(필수), `from`, `to` (`YYYY-MM-DD`, 기본은 최근 7일 / 최근 4주). 주간은 월~일
 ```json
 200
 {
@@ -792,7 +797,8 @@ Refill 객체:
 }
 ```
 - `final: false`면 아직 끝나지 않은 기간 (오늘, 이번 주)이라 실시간 계산값이다
-- `items`는 오래된 순이다. 기간은 하루 요약 최대 31일, 주간 요약 최대 12주 (넘으면 `422 validation_error`). 주간 요약의 `from`은 그 주 월요일로 맞춘다
+- `items`는 오래된 순이다. 기간은 하루 요약 **최대 366일** (R-051, 이전 31일), 주간 요약 최대 12주 (넘으면 `422 validation_error`). 주간 요약의 `from`은 그 주 월요일로 맞춘다
+- `period=total` ★추가 (R-051): 전체 기간 합계 한 항목. `from`·`to`는 무시한다. `period_start`는 이 가족의 첫 복약 건 날짜(없으면 오늘), `period_end`는 오늘, `final: false`. 나머지 필드 의미는 같다
 - `refill`은 기간과 관계없이 **지금** 약통 상태다 (`GET /pillboxes/current`의 `refill_status`와 같은 값)
 - `pending`: 아직 복약 시각 전이거나 진행 중인 건
 - `all_normal`: 모든 건이 AI 정상 판독(`taken_ai`)이고 열린 인계가 없으면 true → G4 "오늘 2번 모두 정상", G6 "이번 주 14번 중 14번 정상"
