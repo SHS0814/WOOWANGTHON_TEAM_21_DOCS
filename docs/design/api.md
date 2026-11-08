@@ -496,7 +496,7 @@ interface NotificationStatus {     // 기기 알림 준비 상태, 3.29로 보�
 - `remaining_cells`: 기대 상태 기준으로 앞으로 드실 약이 남은 칸 수
 - `covered_until`: 남은 약으로 갈 수 있는 마지막 복약 → G7 "목요일 저녁까지 남았어요". 남은 칸이 없으면 `null`
 - `needs_refill`: `remaining_cells <= threshold_cells`
-- `threshold_cells` = **하루 복용 횟수 × 2** (R-010 5번). 하루 복용 횟수는 일정에서 요일별 복약 수의 최댓값. 곱하는 일수(2)는 서버 설정값 `REFILL_THRESHOLD_DAYS`이고 보호자 설정은 없다. 일정이 없으면 0
+- `threshold_cells` = **하루 복용 횟수 × min(`REFILL_THRESHOLD_DAYS`, 약통 가는 일수 − 1)** (R-010 5번, R-057). 하루 복용 횟수는 일정에서 요일별 복약 수의 최댓값. 약통 가는 일수 = 일정에 쓰인 서로 다른 칸 수 ÷ 하루 복용 횟수(내림). `REFILL_THRESHOLD_DAYS`(기본 2)는 서버 설정값이고 보호자 설정은 없다. 일주일 약통 하루 2번이면 4칸(이전과 같음), 하루 약통이면 0칸이라 저녁 복약 뒤에만 `needs_refill`. 일정이 없으면 0
 - `pillbox_mismatch` (R-010 2번): 마지막 리필 이후 **가장 최근 복약 판독**에서 대상 칸 외에 기대와 다른 칸이 있었는지. `detected: true`면 G7에 "약통 상태가 기록과 달라요"를 보여준다. 어르신 재촬영이나 푸시는 없다. 판독이 없으면 `detected: false`, 나머지 `[]`/`null`. 새 리필을 등록하면 초기화된다
 - 약통이 없으면 `404 pillbox_required`
 
