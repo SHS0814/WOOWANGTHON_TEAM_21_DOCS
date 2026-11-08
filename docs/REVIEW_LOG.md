@@ -85,6 +85,7 @@
 | R-065 | 2026-11-08 | FE 에이전트 | T-FE22 설정 탭 압축 (FE `fe/settings-compact` 0322a5a, `reviews/requests/20261108-fe-t-fe22-settings-compact.md`) | ✅ 승인 (수정 1건) | 메인 에이전트 확인: settings.tsx만 변경, tsc 통과. 실제 폰에서 설정 탭이 거의 한 화면, 호칭 편집 시트 열림 확인. FE main 병합. **수정 필요:** 호칭 입력칸을 누르면 키보드가 시트 전체(입력칸·저장 버튼)를 가린다(S22 Ultra). 시트가 키보드 위로 올라오게 고친다 |
 | R-066 | 2026-11-08 | FE 에이전트 | T-FE22a 시트·입력 키보드 가림 수정 (FE `fe/sheet-keyboard` 70cf1fa, `reviews/requests/20261108-fe-t-fe22a-sheet-keyboard.md`) | ✅ 승인 | 원인: Android 15+ edge-to-edge로 창이 줄지 않고 Modal에 키보드 이벤트가 오지 않음. 화면 안 시트 + 키보드 겹침 여백(JS만, 재빌드 불필요), 연결·합류 화면에도 적용. 메인 에이전트가 실제 폰(S22 Ultra, Android 16)에서 호칭 시트 입력 시 입력칸·버튼이 키보드 위에 보이는 것 확인. 어르신·공용 컴포넌트 diff 0. FE main 병합 |
 | R-067 | 2026-11-08 | 사용자 | 오류 수정은 어르신 화면도 허용 (T-FE23) | ✅ 사용자 결정 | R-047의 '어르신 화면 무변경'은 디자인 변경에 대한 것이고, 오류는 어르신 화면에서도 고친다. 첫 건: 어르신 연결 화면(`src/app/elder/connect.tsx`) 입력칸 키보드 가림. 모습(글자 크기·배치·문구)은 바꾸지 않고 키보드 처리만 넣는다 |
+| R-068 | 2026-11-08 | FE 에이전트 | T-FE23 어르신 연결 화면 키보드 가림 수정 (FE `fe/elder-connect-keyboard` 1b6a33e, `reviews/requests/20261108-fe-t-fe23-elder-connect-keyboard.md`) | ✅ 승인 | 공용 Screen에 `keyboardAware` 옵션(기본 꺼짐, 기존 코드 경로 그대로)을 넣고 연결 화면만 켬. 키보드 처리를 `src/lib/keyboard.ts`로 모아 보호자 ui.tsx와 공유. 입력칸 있는 어르신 화면은 connect.tsx 하나. 디자인 변경 없음. 메인 에이전트가 실제 폰 어르신 앱에서 6자리 입력칸과 '숫자로 연결' 버튼이 키보드 위로 올라오는 것 확인. FE main 병합 |
 
 ## 헌장 변경 이력
 
