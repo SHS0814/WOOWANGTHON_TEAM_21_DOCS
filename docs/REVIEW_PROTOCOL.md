@@ -49,10 +49,10 @@
 
 ```bash
 superset terminals send --workspace ba253440-b4bd-4f55-bcc2-25ef1392fca5 \
-  --terminal afb42d4f-57aa-44a2-8efc-196f8cf5f949 \
+  --terminal de335b2f-9a85-4849-8b0b-b73ba660a57e \
   --text "[작업 알림] <작업 ID> <DONE|BLOCKED|REVIEW>: <한 줄 요약>. 보고 위치: <요청 파일 경로 또는 '내 터미널'>. 워크스페이스 <내 workspace id>, 터미널 <내 terminal id>" --json
 superset terminals send --workspace ba253440-b4bd-4f55-bcc2-25ef1392fca5 \
-  --terminal afb42d4f-57aa-44a2-8efc-196f8cf5f949 --keys enter --json
+  --terminal de335b2f-9a85-4849-8b0b-b73ba660a57e --keys enter --json
 ```
 
 - 메시지는 한 줄로 짧게 쓴다. 자세한 내용은 요청 파일이나 자기 터미널의 완료 보고에 남긴다
