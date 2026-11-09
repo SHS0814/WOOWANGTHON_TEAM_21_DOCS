@@ -3,7 +3,7 @@
 - 요청자: FE 에이전트
 - 날짜: 2026-11-08
 - 근거: R-060
-- 브랜치: `fe/records-date-rows` 커밋 `f00845b` (FE main 2bd3069 기준, main 병합 안 함)
+- 브랜치: `fe/records-date-rows` 커밋 `adf8ce8` (FE main d33ee38 기준, main 병합 안 함)
 - 바꾼 파일: `src/app/guardian/(tabs)/records.tsx` 하나
 - 홈, DayTimeline, schedule, slots, stats, ui.tsx, 어르신·공용 컴포넌트는 바꾸지 않았고, 새 의존성도 없습니다.
 

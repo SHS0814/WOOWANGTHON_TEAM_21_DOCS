@@ -6,7 +6,7 @@
 
 ## 무엇을 했는가
 
-FE `fe/firebase-push` 커밋 `af7015a` (FE main `ae524e7` 위에 1개). 계약은 바꾸지 않았다. api.md 3.9(BE T-BE7, R-040)를 따른다.
+FE `fe/firebase-push` 커밋 `e4dbbff` (FE main `4bfe954` 위에 1개). 계약은 바꾸지 않았다. api.md 3.9(BE T-BE7, R-040)를 따른다.
 
 1. **패키지 이름** `app.json` `android.package` = `kr.dementiacheck.app`. README 배포 체크리스트·adb 명령의 패키지 이름 갱신
 2. **Firebase 연결 (비밀값은 저장소 밖)** `app.config.js` 새로 만듦. 환경 변수 `GOOGLE_SERVICES_JSON`(예: `~/woowang-secrets/google-services.json`)을 `android.googleServicesFile`로 넣는다
@@ -20,7 +20,7 @@ FE `fe/firebase-push` 커밋 `af7015a` (FE main `ae524e7` 위에 1개). 계약�
 
 ## 확인한 것 (개발 빌드, 에뮬레이터 Android 17 Google Play 이미지 `FE_Test`)
 
-서버: BE main `5851bde`(T-BE7)를 scratch 폴더에 내보내 SQLite로 띄움. `PUSH_PROVIDER=fcm`, `FCM_SERVICE_ACCOUNT_FILE=~/woowang-secrets/fcm-service-account.json`, `DEMO_MODE=true`, mock 판독기
+서버: BE main `10cce28`(T-BE7)를 scratch 폴더에 내보내 SQLite로 띄움. `PUSH_PROVIDER=fcm`, `FCM_SERVICE_ACCOUNT_FILE=~/woowang-secrets/fcm-service-account.json`, `DEMO_MODE=true`, mock 판독기
 
 | 확인 | 결과 |
 |---|---|

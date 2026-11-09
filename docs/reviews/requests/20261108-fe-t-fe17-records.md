@@ -3,7 +3,7 @@
 - 요청자: FE 에이전트
 - 날짜: 2026-11-08
 - 근거: R-051 (사용자 결정), 계약은 api.md 3.19 `filter`·`reason`·`order`, 3.25 하루 요약 366일·`period=total` (T-BE8, R-052)
-- 브랜치: `fe/guardian-records` 커밋 `4170901`. T-FE16 커밋 `b2ee7b8` 위에서 만들었고, main 병합은 하지 않았습니다.
+- 브랜치: `fe/guardian-records` 커밋 `2103ccd`. T-FE16 커밋 `c011f01` 위에서 만들었고, main 병합은 하지 않았습니다.
 - 새 의존성 없음, 네이티브 모듈 없음, api.md 변경 없음
 - R-053 후속 2건(요일별 시각 덮어쓰기, 홈 확인할 일 개수)은 T-FE18로 옮겨졌다고 해서 손대지 않았습니다.
   - 이 브랜치는 홈 `index.tsx`, `DayTimeline`, `schedule.tsx`, `slots.ts`를 바꾸지 않습니다.

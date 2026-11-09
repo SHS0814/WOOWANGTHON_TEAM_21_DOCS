@@ -3,7 +3,7 @@
 - 날짜: 2026-11-08
 - 종류: 설계 / 코드
 - 관련 헌장 항목: 5장 원칙 1·2·3·6·7, 6장 (모의 표시), R-008, R-047
-- 브랜치·커밋: FE `fe/guardian-redesign` a284f96 (main bf1b925에서 시작, main 병합 안 함)
+- 브랜치·커밋: FE `fe/guardian-redesign` 02db755 (main c956a0c에서 시작, main 병합 안 함)
 
 ## 무엇을 했나
 

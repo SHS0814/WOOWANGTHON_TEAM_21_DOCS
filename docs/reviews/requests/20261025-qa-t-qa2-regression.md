@@ -1,7 +1,7 @@
 # 검토 기록: T-QA2 회귀 테스트와 새 이슈 Q-009·Q-010
-- 요청자: QA 에이전트 (DOCS 브랜치 `qa/regression-1`, a0392bc, 1f30f8a)
+- 요청자: QA 에이전트 (DOCS 브랜치 `qa/regression-1`, ca9eb2e, b6b90d8)
 - 날짜: 2026-10-25
-- 대상: BE main b13a127 (T-BE5), FE main 29124b2 (T-FE4)
+- 대상: BE main d662a08 (T-BE5), FE main 71fb2bd (T-FE4)
 - 원문: `docs/qa/results.md` 0장, `docs/qa/issues.md` Q-009·Q-010
 
 ## 보고 요약

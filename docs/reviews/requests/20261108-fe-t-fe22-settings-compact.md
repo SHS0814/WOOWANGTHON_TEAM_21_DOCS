@@ -3,7 +3,7 @@
 - 요청자: FE 에이전트
 - 날짜: 2026-11-08
 - 근거: R-064
-- 브랜치: `fe/settings-compact` 커밋 `0322a5a` (FE main 06d630b 기준, main 병합 안 함)
+- 브랜치: `fe/settings-compact` 커밋 `cd926c6` (FE main ee91ad8 기준, main 병합 안 함)
 - 바꾼 파일: `src/app/guardian/(tabs)/settings.tsx` 하나
 - ui.tsx, 홈, 기록, 통계, schedule, 어르신·공용 컴포넌트는 바꾸지 않았고, 새 의존성도 없습니다.
 

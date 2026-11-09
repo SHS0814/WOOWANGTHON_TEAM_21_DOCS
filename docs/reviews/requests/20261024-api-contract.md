@@ -68,9 +68,9 @@ API 엔드포인트는 구현하지 않았다.
 
 - DOCS: `docs/design/backend.md` (수정), `docs/design/api.md` (신규), 이 파일. DOCS 저장소에는 커밋하지 않았다
 - 서버 저장소 `WOOWANGTHON_TEAM_00_BE`, 브랜치 `be/api-contract-skeleton` (main 병합 안 함)
-  - `14da545` FastAPI 서버 뼈대 (/health, 설정 로딩, Docker Compose 초안)
-  - `2fe311a` AI 판독 인터페이스(Reader)와 Mock/Claude/Ollama 판독기
-  - `22a358c` 판독 정확도 검증 하네스와 합성 샘플 라벨
+  - `1713443` FastAPI 서버 뼈대 (/health, 설정 로딩, Docker Compose 초안)
+  - `6ab8c62` AI 판독 인터페이스(Reader)와 Mock/Claude/Ollama 판독기
+  - `9b6bbc2` 판독 정확도 검증 하네스와 합성 샘플 라벨
 - 확인: `uv run pytest` 9개 통과, `ruff check`·`ruff format --check` 통과, `python -m harness.run --readers mock,claude,ollama --layout --thresholds 0.8` 실행 시 mock 표 출력, claude·ollama는 이유와 함께 건너뜀. `docker build` 성공, `docker compose up`으로 api·db 실행 후 `/health` 응답 확인 (`is_mock: true`)
 
 ## 헌장과 다르거나 애매한 지점

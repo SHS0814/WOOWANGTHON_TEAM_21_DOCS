@@ -25,7 +25,7 @@
 - 기존 테스트 수정: `test_settings_get_put`의 GET 본문에 `elder_refill_prompt: false` 추가, 시드 테스트 2개에 설정 값 확인 추가
 
 ## 관련 파일·브랜치·커밋
-- BE `be/refill-prompt` 36bf965 (main 9fab700에서 시작)
+- BE `be/refill-prompt` 876e44b (main 7964e70에서 시작)
   - `app/models.py`, `app/routers/account.py`, `app/routers/dose.py`, `app/seed_demo.py`
   - `tests/test_refill_prompt.py`(새), `tests/test_pairing.py`, `tests/test_seed_demo.py`
 

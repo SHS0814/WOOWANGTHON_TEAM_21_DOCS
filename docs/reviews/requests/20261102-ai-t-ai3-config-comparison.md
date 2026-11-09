@@ -177,7 +177,7 @@ R-038 2번(정답 라벨 확인 뒤 신뢰도 기준 확정)과 R-037 비교 검
 
 ## 관련 파일·브랜치·커밋
 
-- BE `ai/model-eval` `be432c4` (기준 커밋 551206e, BE main 5851bde보다 뒤에 있으나 `app/reader`·`harness` 차이 없음)
+- BE `ai/model-eval` `d9f12f1` (기준 커밋 f43a17a, BE main 10cce28보다 뒤에 있으나 `app/reader`·`harness` 차이 없음)
 - `harness/compare.py`(신규), `tests/test_harness_compare.py`(신규), `harness/README.md`. **하네스 외 코드 변경 없음**
 - pytest 155 통과·2 건너뜀(pipefail), `ruff check`·`ruff format --check` 통과
 

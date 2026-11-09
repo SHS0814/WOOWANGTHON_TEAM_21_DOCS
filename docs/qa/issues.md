@@ -1,7 +1,7 @@
 # QA 이슈 (T-QA1, T-QA1b, T-QA2, T-QA3, T-QA4)
 
 - 원본은 이 파일이다. 같은 내용을 Notion 이슈 DB에 한 행씩 올린다 (보고자: QA 에이전트)
-- 대상: 처음 보고 BE main `dec9623`, FE main `342a0bb`. 회귀 확인(T-QA2) BE main `b13a127` (T-BE5, R-024), FE main `29124b2` (T-FE4, R-022)
+- 대상: 처음 보고 BE main `0ebea49`, FE main `a92b3dd`. 회귀 확인(T-QA2) BE main `d662a08` (T-BE5, R-024), FE main `71fb2bd` (T-FE4, R-022)
 - Q-001~Q-008의 처리 방향은 메인 에이전트 판정 R-021 (`docs/reviews/requests/20261025-qa-t-qa1-issues.md`)을 따른다. 수정 담당: BE T-BE5, FE T-FE4
 - 재현 테스트가 있는 이슈는 `qa/api_scenarios`의 `test_q00N_*` 이다. 고쳐지면 그 테스트가 통과한다
 - 알려진 문제였던 2건(동시 GET 때 `no_response` 인계 중복, CORS 없음)은 T-BE4 이후 다시 확인했고 재발하지 않았다 (`test_m10`, `test_m11`, `test_m12`)
@@ -16,10 +16,10 @@
 | Q-006 | G5 "칸 그대로" 설명이 안내 후 재촬영 기한 초과 건에서 안내 사실을 빠뜨림 | 낮음 | FE | 5-1 | ✅ 확인됨 (`test_q006` 통과, 화면 G5 안내 문구) |
 | Q-007 | 전날 끝나지 않은 복약 건이 자정이 지나면 어르신 "오늘" 목록에서 사라져 사진을 찍을 수 없음 | 보통 | BE (필드) → FE (화면) | 5-3 | ✅ 확인됨 (clock `test_q007_*` 3개 통과, 화면 E4·E8 "어젯밤 자기 전") |
 | Q-008 | 무응답 인계가 기한보다 약 11분 늦게 생긴 일이 1회 있음 (원인 조사) | 낮음 | BE | 5-5 | ✅ 확인됨 (실행 환경 문제로 닫음: 맥 유휴 잠자기, R-024. BE 지연·잠자기 로그, deploy.md 절전 끄기. `test_q008` 지연 47·27·7초) |
-| Q-009 | 오늘 건이 무응답 인계되면 어르신 앱에서 늦은 사진을 올릴 길이 없음 (전날 건은 됨) | 보통 | FE (설계 판단 필요) | 5-3, 5-5 | ✅ 확인됨 (R-026 결정·T-FE7 `e23f262`. 개발 빌드 실서버: E8 "드셨으면 약통 사진을 찍어 주세요" + [사진 찍기] → E7a, E8 ✓. E3 안내 문장. 복용 권유 없음) |
+| Q-009 | 오늘 건이 무응답 인계되면 어르신 앱에서 늦은 사진을 올릴 길이 없음 (전날 건은 됨) | 보통 | FE (설계 판단 필요) | 5-3, 5-5 | ✅ 확인됨 (R-026 결정·T-FE7 `d8ae601`. 개발 빌드 실서버: E8 "드셨으면 약통 사진을 찍어 주세요" + [사진 찍기] → E7a, E8 ✓. E3 안내 문장. 복용 권유 없음) |
 | Q-010 | 자정 무렵 시각을 "오전 12시"로 읽어 줌 (정오는 "오후 12시") | 낮음 | FE | 5-3 | ✅ 확인됨 (T-FE7. `spokenTime` 00:00 "밤 12시", 12:00 "낮 12시", 12:30 "낮 12시 30분") |
-| Q-011 | Android 개발 빌드에서 어르신 사진 업로드가 서버에 닿지 않음 ("사진을 보내지 못했어요") | 높음 | FE (T-FE9, P0) | 핵심 흐름 차단 | ✅ 확인됨 (FE `7f53291`, R-031. 개발 빌드에서 어르신 4가지·재촬영·E8 늦은 사진, 보호자 등록·리필 업로드 모두 서버 도달) |
-| Q-012 | 일정을 바꿔도 어르신 폰 알림은 앱을 다시 시작할 때까지 옛 시각에 울림 | 보통 | FE | 5-2, 5-3 | ✅ 확인됨 (T-FE10 `ae524e7`, R-034. 앱을 켠 채 내일 아침 08:00→09:00 변경과 내일 취침 칸 삭제가 저장 뒤 약 20초 안에 알림에 반영) |
+| Q-011 | Android 개발 빌드에서 어르신 사진 업로드가 서버에 닿지 않음 ("사진을 보내지 못했어요") | 높음 | FE (T-FE9, P0) | 핵심 흐름 차단 | ✅ 확인됨 (FE `a706703`, R-031. 개발 빌드에서 어르신 4가지·재촬영·E8 늦은 사진, 보호자 등록·리필 업로드 모두 서버 도달) |
+| Q-012 | 일정을 바꿔도 어르신 폰 알림은 앱을 다시 시작할 때까지 옛 시각에 울림 | 보통 | FE | 5-2, 5-3 | ✅ 확인됨 (T-FE10 `4bfe954`, R-034. 앱을 켠 채 내일 아침 08:00→09:00 변경과 내일 취침 칸 삭제가 저장 뒤 약 20초 안에 알림에 반영) |
 | Q-013 | 기기 시간대가 서울이 아니면 어르신 화면의 날짜·시각이 기기 시각으로 나옴 ("저녁 오전 3시") | 낮음 | FE | 5-3 | ✅ 확인됨 (T-FE10. 기기 LA 시각 토 23:26에도 E3 "10월 25일 일요일 / 저녁 오후 7시", E8 기록 시각 "오후 3시 29분"(서울)) |
 
 ---
@@ -160,9 +160,9 @@
 - 재현 환경
   - Mac (Apple Silicon), Android SDK `~/Library/Android/sdk`, JDK 21 (Microsoft OpenJDK 21.0.11)
   - 에뮬레이터 AVD `Medium_Phone`: `sdk_gphone16k_arm64`, **Android 17 (API 37)**, 시간대 Asia/Seoul. 창 없이 실행: `emulator -avd Medium_Phone -no-window -no-audio -no-boot-anim -no-snapshot-save`
-  - FE main `425ca96` (T-FE8). 빌드: `_targets/FE`에서 `npm install` 뒤
+  - FE main `b87c217` (T-FE8). 빌드: `_targets/FE`에서 `npm install` 뒤
     `EXPO_PUBLIC_API_MODE=http EXPO_PUBLIC_API_BASE_URL=http://10.0.2.2:18200/api/v1 EXPO_PUBLIC_CREATE_DEMO_FAMILY=true CI=1 npx expo run:android --port 8298` (BUILD SUCCESSFUL 2m18s, debug APK, Metro 8298)
-  - BE main `b13a127`, `_targets/BE`에서:
+  - BE main `d662a08`, `_targets/BE`에서:
     `DATABASE_URL=sqlite:///…/dev.db PHOTO_DIR=…/photos-dev DEMO_MODE=true DAILY_READING_LIMIT=1000 REASK_OFFSETS_MIN=[1,2] NO_RESPONSE_HANDOFF_MIN=4 RETAKE_WAIT_MIN=7 uv run --no-sync uvicorn app.main:create_app --factory --host 127.0.0.1 --port 18200 --log-config <uvicorn.access INFO 설정>`
 - 재현 단계
   1. 데모 가족·4×7 약통·일정을 API로 만들고 어르신 6자리 코드 발급 (`qa/api_scenarios` 도우미와 같은 방식)
@@ -183,7 +183,7 @@
   4. 실기기에서도 같은지 (에뮬레이터 한정 여부)
 - 영향: 이 빌드로는 어르신이 사진을 올릴 수 없어 정상 기록·재촬영·이중 의심 판정이 모두 안 되고, 결국 무응답 인계로 끝난다. QA 알림 항목 중 사진 업로드가 필요한 N14(사진 뒤 남은 재질문 취소), N25(재촬영 알림, 실서버)와 Q-009 E8 늦은 사진의 실서버 확인이 막힘 → 모의 서버 모드 개발 빌드로 대신 확인
 - 스크린샷(로컬, 커밋 안 함): `_targets/run/shots/android/b09-camera.png`, `b10-e7b-retake.png`(실제 화면은 "사진을 보내지 못했어요")
-- **원인과 수정 (R-031, FE `7f53291`):** Expo SDK 58의 전역 `fetch`(expo/fetch)가 RN식 `{uri}` FormData 파일 파트를 지원하지 않음 → expo-file-system `File`로 보냄. 개발 빌드 재빌드 없이 JS만 바뀜
+- **원인과 수정 (R-031, FE `a706703`):** Expo SDK 58의 전역 `fetch`(expo/fetch)가 RN식 `{uri}` FormData 파일 파트를 지원하지 않음 → expo-file-system `File`로 보냄. 개발 빌드 재빌드 없이 JS만 바뀜
 - **확인 (T-QA3, 2026-10-25 14:27~14:41):** 같은 에뮬레이터·서버에서 Metro만 다시 불러와 확인. 어르신 정상(E7a)·애매(E7b)→재촬영 정상·칸 그대로(E7d)→다시 그대로(E7c)·이중 의심(E7c), E8 늦은 사진(오늘 무응답 인계 건 → E7a, 인계 `late_photo=true`, E8 ✓), 보호자 약통 등록(`POST /pillboxes/detect` 200, `POST /pillboxes` 201), 리필(`POST /refills` 201). 서버 access 로그에 모두 기록됨 → **확인됨**
 
 ## Q-012 일정을 바꿔도 어르신 폰 알림은 앱을 다시 시작할 때까지 옛 시각에 울림
@@ -191,7 +191,7 @@
 - 심각도: 보통
 - 담당 추정: FE
 - 위반 원칙: 5장 2 (바뀐 시각에 물어보지 못해 무응답 인계가 생김), 5장 3 (어르신은 앱을 다시 시작하지 않는다). 계획 N17
-- 재현 (개발 빌드, 에뮬레이터 API 37, FE `7f53291`, BE `b13a127`): 어르신 앱이 홈(E3)에 떠 있는 상태에서 보호자가 `PUT /schedule`로 내일 아침 08:00 → 09:00 변경 (14:32:36)
+- 재현 (개발 빌드, 에뮬레이터 API 37, FE `a706703`, BE `d662a08`): 어르신 앱이 홈(E3)에 떠 있는 상태에서 보호자가 `PUT /schedule`로 내일 아침 08:00 → 09:00 변경 (14:32:36)
   - 70초 뒤 (오늘 목록 30초 주기 갱신 두 번 지남): `dumpsys alarm` 내일 알림이 여전히 08:00·08:01·08:02
   - 앱 강제 종료 후 다시 열기: 09:00·09:01·09:02로 바뀜
 - 기대 (계획 N17): 다음 주기 갱신(30초) 안에 바뀐 일정으로 다시 예약, 지운 칸 알림은 취소

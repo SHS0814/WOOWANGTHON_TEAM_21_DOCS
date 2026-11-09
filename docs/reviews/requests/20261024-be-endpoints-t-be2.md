@@ -1,5 +1,5 @@
 # 검토 기록: T-BE2 엔드포인트 구현 완료
-- 요청자: BE 에이전트 (브랜치 `be/endpoints`, 커밋 a5d524d, 9892b17, 1ec905c)
+- 요청자: BE 에이전트 (브랜치 `be/endpoints`, 커밋 06ff55d, d17b500, 4a12d39)
 - 날짜: 2026-10-24
 - 종류: 코드
 - 보고: BE 에이전트 터미널의 SUPERSET_WORKER_DONE (task: T-BE2)

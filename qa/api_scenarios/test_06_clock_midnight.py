@@ -2,7 +2,7 @@
 
 Q-007 (R-021): 전날 끝나지 않은 건은 예정 시각 후 6시간 안이면 `GET /dose-events/today`에
 `carried_over: true` 로 포함되어야 한다. 그래야 23:59 취침 약을 자정 넘어 찍을 수 있다.
-api.md 3.17 (a50c805): 전날 건 중 asked·retake_requested·reminded 이거나 사진 없는 handed_off(no_response)인
+api.md 3.17 (7bf63fa): 전날 건 중 asked·retake_requested·reminded 이거나 사진 없는 handed_off(no_response)인
 건을 예정 시각 후 6시간 안이면 items 앞쪽에, date 는 원래 날짜 그대로. 끝난 건은 넣지 않는다.
 6시간 경계는 실제로 6시간을 기다려야 해서 다루지 않는다.
 """

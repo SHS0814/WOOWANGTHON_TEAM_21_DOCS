@@ -69,7 +69,7 @@
 
 ## 5. 로컬 알림·푸시 (T-FE5, R-025)
 
-- 대상: FE main `fe297aa` (`src/notify/`), T-FE6 `1f1ae84` (R-027), T-FE8 (R-028, 병합 예정). 어르신 로컬 복약 알림, 보호자 인계 푸시 등록, 알림을 누르면 E4·G5
+- 대상: FE main `9935f8c` (`src/notify/`), T-FE6 `616f89e` (R-027), T-FE8 (R-028, 병합 예정). 어르신 로컬 복약 알림, 보호자 인계 푸시 등록, 알림을 누르면 E4·G5
 - 결정 사항: 정확한 알람 권한 안내 화면은 T-FE6 (R-025 ①), 원격 푸시 자격 증명은 U-004 사용자 결정 대기 (②), full-screen intent는 ⏸ 보류 (③)
 - 표기: 🔧 = **개발 빌드 필요** (`npx expo run:android` 또는 EAS). Expo Go(Android 58.0.5)는 `expo-notifications`를 불러오지 못해 알림이 아예 없고, 웹도 알림이 없다 (`src/notify/module.ts`). 🍎 = iOS 실기기 필요 (이 맥에는 iOS 시뮬레이터가 없다). ☁ = U-004 (EAS 프로젝트·FCM/APNs 자격 증명) 이후
 - QA 환경: 이 맥에 Android SDK, `adb`, 에뮬레이터 AVD `Medium_Phone`이 있다. BE는 `_targets/BE` 18200번 (에뮬레이터에서는 `http://10.0.2.2:18200/api/v1`). 시각이 필요하면 시연 트리거(지금으로 당기기), fast 프로필(인계 1분), clock 실행기를 쓴다

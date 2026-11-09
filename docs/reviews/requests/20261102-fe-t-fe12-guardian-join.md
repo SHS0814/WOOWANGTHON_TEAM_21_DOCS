@@ -6,7 +6,7 @@
 
 ## 무엇을 했는가
 
-FE `fe/guardian-join` 커밋 `89c401d` (FE main `af7015a` 위에 1개). JS만 바꿨고 계약·네이티브 변경은 없다. 개발 빌드를 다시 만들 필요가 없다.
+FE `fe/guardian-join` 커밋 `90af226` (FE main `e4dbbff` 위에 1개). JS만 바꿨고 계약·네이티브 변경은 없다. 개발 빌드를 다시 만들 필요가 없다.
 
 1. **G1 첫 화면(`src/app/guardian/connect.tsx`)** 에 "초대 코드가 있어요" 버튼. 초대 코드와 내 이름을 넣어 `POST /pair { code, display_name, platform }` 하면 보호자 홈으로 간다. "가족 만들기로 돌아가기" 있음. 토큰이 이미 있을 때(설정 → 어르신 폰 연결)는 이 경로가 보이지 않는다
 2. **입력:** 코드만 넣어도, 링크(`woowang://pair?code=…`)째 붙여넣어도 된다. 공백은 지운다. 코드가 대소문자를 구분하므로 이 칸은 자동 대문자·자동 고침을 끈다 (`Field`에 `verbatim` 추가)
@@ -22,7 +22,7 @@ FE `fe/guardian-join` 커밋 `89c401d` (FE main `af7015a` 위에 1개). JS만 �
 
 ## 확인한 것
 
-방법: `expo export -p web` 번들을 Playwright(Chromium, 412×900)로 조작. 서버는 BE main `5851bde`를 scratch에 내보내 SQLite·`ENV=dev`로 `localhost:8765`에 띄움. 공개 서버, 폰·에뮬레이터, 배포 서버 설정은 건드리지 않았다. `tsc --noEmit` 통과.
+방법: `expo export -p web` 번들을 Playwright(Chromium, 412×900)로 조작. 서버는 BE main `10cce28`를 scratch에 내보내 SQLite·`ENV=dev`로 `localhost:8765`에 띄움. 공개 서버, 폰·에뮬레이터, 배포 서버 설정은 건드리지 않았다. `tsc --noEmit` 통과.
 
 | 확인 | 로컬 서버 | mock |
 |---|---|---|
@@ -53,7 +53,7 @@ FE `fe/guardian-join` 커밋 `89c401d` (FE main `af7015a` 위에 1개). JS만 �
 
 ## 관련 파일·브랜치·커밋
 
-`fe/guardian-join` `89c401d`: `src/app/guardian/connect.tsx`, `src/lib/pairCode.ts`(새 파일), `src/components/Field.tsx`, `src/api/mock.ts`, `src/app/elder/connect.tsx`
+`fe/guardian-join` `90af226`: `src/app/guardian/connect.tsx`, `src/lib/pairCode.ts`(새 파일), `src/components/Field.tsx`, `src/api/mock.ts`, `src/app/elder/connect.tsx`
 
 ## 헌장과 다르거나 애매한 지점
 

@@ -36,7 +36,7 @@
 - `tests/test_seed_demo.py`: 하루 약통 시드 (1×3, 21칸, 기준 0, needs_refill false)
 
 ## 관련 파일·브랜치·커밋
-- BE `be/daily-pillbox` 41b6d50 (main 00ccb0f에서 시작)
+- BE `be/daily-pillbox` 1cf282a (main a26ee41에서 시작)
   - `app/routers/pillboxes.py`, `app/services/expected.py`, `app/jobs.py`, `app/seed_demo.py`, `docs/deploy.md`
   - `tests/test_daily_pillbox.py`(새), `tests/test_pillbox.py`, `tests/test_seed_demo.py`
 

@@ -1,7 +1,7 @@
 # 검토 요청: T-BE8 기록 검색과 요약 366일·전체
 - 요청자: BE 에이전트
 - 날짜: 2026-11-08
-- 종류: 코드 (계약 변경 없음. api.md 3.19·3.25는 DOCS 0777a7f의 메인 에이전트 계약을 그대로 구현)
+- 종류: 코드 (계약 변경 없음. api.md 3.19·3.25는 DOCS a470c7e의 메인 에이전트 계약을 그대로 구현)
 - 관련 헌장 항목: 4장 MVP #6(하루·주간 요약), R-051
 
 ## 무엇을 했는가
@@ -48,7 +48,7 @@
 SQLite는 모두 이보다 빠르다(하루 요약 366일 28/38 ms). 서버 CPU가 이 PC보다 2~3배 느리다고 봐도 1초 목표 안이다.
 
 ## 관련 파일·브랜치·커밋
-- BE `be/records-search` de97183 (main e8e5f2c에서 시작)
+- BE `be/records-search` 81eb9f1 (main 61787c9에서 시작)
   - `app/routers/dose.py`, `app/routers/summaries.py`, `app/serializers.py`(`events_out`), `app/services/summary.py`
   - `tests/history.py`(1년치 시드), `tests/test_records_search.py`, `tests/test_summary_jobs.py`
 - 측정 스크립트는 커밋하지 않음 (임시 파일)

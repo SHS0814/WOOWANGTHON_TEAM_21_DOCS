@@ -2,7 +2,7 @@
 
 - 요청자: FE 에이전트
 - 날짜: 2026-11-08
-- 브랜치: `fe/sheet-keyboard` 커밋 `70cf1fa` (FE main a3b08ce 기준, main 병합 안 함)
+- 브랜치: `fe/sheet-keyboard` 커밋 `0f50d56` (FE main 57a9f28 기준, main 병합 안 함)
 - 바꾼 파일: `src/components/guardian/ui.tsx`, `src/app/guardian/(tabs)/settings.tsx`
 - 네이티브 설정(app.json) 변경 없음, 재빌드 불필요(JS만), 새 의존성 없음, 어르신 화면 변경 없음
 

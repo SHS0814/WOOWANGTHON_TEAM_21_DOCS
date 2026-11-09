@@ -3,7 +3,7 @@
 - 요청자: FE 에이전트
 - 날짜: 2026-11-08
 - 근거: R-067 (오류는 어르신 화면에서도 고친다, 디자인은 그대로)
-- 브랜치: `fe/elder-connect-keyboard` 커밋 `1b6a33e` (FE main 9bd47a0 기준, main 병합 안 함)
+- 브랜치: `fe/elder-connect-keyboard` 커밋 `3e42f2c` (FE main 392a554 기준, main 병합 안 함)
 - 바꾼 파일: `src/app/elder/connect.tsx`, `src/components/Screen.tsx`, `src/lib/keyboard.ts`(새 파일), `src/components/guardian/ui.tsx`(훅을 옮긴 것뿐)
 - JS만 바꿔 재빌드는 필요 없고, 새 의존성도 없습니다.
 

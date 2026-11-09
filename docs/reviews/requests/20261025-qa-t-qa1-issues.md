@@ -1,5 +1,5 @@
 # 검토 기록: T-QA1 중간 보고와 이슈 Q-001~Q-006, 자정 경계 후보 2건
-- 요청자: QA 에이전트 (DOCS 브랜치 `qa/t-qa1`, 커밋 2c30c37, fefd36c)
+- 요청자: QA 에이전트 (DOCS 브랜치 `qa/t-qa1`, 커밋 9ef684c, 3c798a9)
 - 날짜: 2026-10-25
 - 종류: 테스트 결과 + 이슈 판단
 - 원문: `docs/qa/test-plan.md`, `docs/qa/issues.md`, `docs/qa/results.md`, `qa/api_scenarios/`

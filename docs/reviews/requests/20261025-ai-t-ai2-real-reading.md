@@ -6,7 +6,7 @@
 
 ## 무엇을 했는가
 
-BE `ai/model-eval` 커밋 `4476948`, `551206e` (1단계 `e4a865c`~`d995d75` 위에). 엔드포인트·DB 스키마·계약서는 바꾸지 않았다.
+BE `ai/model-eval` 커밋 `8cfce6c`, `f43a17a` (1단계 `5987c67`~`60f1d7a` 위에). 엔드포인트·DB 스키마·계약서는 바꾸지 않았다.
 정확도 숫자는 사용자 확인 전 초안 라벨 기준이라 **결과로 쓰지 않는다.** 아래 판단은 연결·지연·비용·응답 형식과 서버 규칙 동작만 근거로 한다.
 
 ### 1. 모델 확인과 선택: `gpt-6-luna` (기본 추론 강도), `OPENAI_MODEL` 기본값에 반영
@@ -79,7 +79,7 @@ R-037(사용자 결정): 비교보다 실제 AI 판독이 앱에서 작동하는
 
 ## 관련 파일·브랜치·커밋
 
-- BE `ai/model-eval`: `4476948`, `551206e` (T-AI2), 1단계 `e4a865c`, `4abb674`, `d995d75`
+- BE `ai/model-eval`: `8cfce6c`, `f43a17a` (T-AI2), 1단계 `5987c67`, `7b81b9e`, `60f1d7a`
 - `app/reader/openai.py`, `app/reader/__init__.py`(`build_server_reader`, `UnavailableReader`), `app/main.py`(두 줄), `app/config.py`(`OPENAI_MODEL=gpt-6-luna`, `OPENAI_REASONING_EFFORT`), `.env.example`, `README.md`, `harness/run.py`(`-calls.csv`), `harness/pricing.py`, `harness/README.md`, `tests/test_openai_server.py`(신규), `tests/test_harness.py`
 - `pytest` 142 통과·2 건너뜀(pipefail), `ruff check`·`ruff format --check` 통과
 
@@ -96,7 +96,7 @@ R-037(사용자 결정): 비교보다 실제 AI 판독이 앱에서 작동하는
 ## 판정 (메인 에이전트, 2026-10-25): ✅ 승인 — R-038
 
 - 확인: pytest 142 통과·2 건너뜀, ruff 통과(직접 실행), 커밋에 사진·결과·키 없음, `app/main.py`는 두 줄
-- BE main 병합 (fast-forward, 551206e). 1단계(R-036)도 함께 들어감
+- BE main 병합 (fast-forward, f43a17a). 1단계(R-036)도 함께 들어감
 - 결정
   1. 기본 모델 `gpt-6-luna`(기본 추론) 승인. 지연 때문에 `gpt-6.1-sol`로 바꿀지는 사용자에게 물었다
   2. 신뢰도 기준 임시 0.9 유지. 정답 라벨 확인 뒤 `--thresholds`로 확정

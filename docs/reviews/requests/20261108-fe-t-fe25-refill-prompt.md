@@ -5,7 +5,7 @@
 - 종류: 코드
 - 근거: R-071 (사용자 결정), api.md 3.18 `refill_prompt`, 3.26 `elder_refill_prompt`
 - 관련 헌장 항목: 4장 MVP #7(리필), 5장 원칙 2·3·6
-- 브랜치: `fe/refill-prompt` 커밋 `43b7003` (FE main 48aca4e 기준, main 병합 안 함, `git merge-tree`로 main과 충돌 없음 확인)
+- 브랜치: `fe/refill-prompt` 커밋 `a77a5c5` (FE main 204ddd3 기준, main 병합 안 함, `git merge-tree`로 main과 충돌 없음 확인)
 - api.md 변경 없음, 새 의존성 없음. `src/components/*.tsx`, `src/notify`, `theme.ts`, `package*.json`은 diff 0
 
 ## 1. 어르신 E7a (사용자 결정 기능, 최소 변경)

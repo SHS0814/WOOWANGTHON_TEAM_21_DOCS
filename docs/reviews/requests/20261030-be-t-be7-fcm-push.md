@@ -30,7 +30,7 @@
 끝남. 실제 기기 수신 확인은 FE T-FE11이 기기 FCM 토큰을 등록한 뒤 함께 한다 (`scripts/fcm_check.py <키> <기기 토큰>`으로 200 확인 → `PUSH_PROVIDER=fcm`으로 인계 발생).
 
 ## 관련 파일·브랜치·커밋
-- BE `be/fcm-push` 5851bde (`app/push.py`, `app/config.py`, `app/main.py`, `tests/test_fcm_push.py`, `scripts/fcm_check.py`, `docker-compose.yml`, `docs/deploy.md`, `.env.example`, `pyproject.toml`, `uv.lock`)
+- BE `be/fcm-push` 10cce28 (`app/push.py`, `app/config.py`, `app/main.py`, `tests/test_fcm_push.py`, `scripts/fcm_check.py`, `docker-compose.yml`, `docs/deploy.md`, `.env.example`, `pyproject.toml`, `uv.lock`)
 - DOCS `be/t-be7-fcm-contract` (api.md 3.9, 이 요청 파일)
 
 ## 헌장과 다르거나 애매한 지점

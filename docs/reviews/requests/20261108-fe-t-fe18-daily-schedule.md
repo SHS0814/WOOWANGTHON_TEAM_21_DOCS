@@ -3,10 +3,10 @@
 - 요청자: FE 에이전트 2
 - 날짜: 2026-11-08
 - 종류: 코드 (화면 설계 세부 포함)
-- 근거: R-054 (사용자 결정), R-053 후속 2건, api.md 3.14 (DOCS ad31e57)
+- 근거: R-054 (사용자 결정), R-053 후속 2건, api.md 3.14 (DOCS 475ba00)
 - 관련 헌장 항목: 4장 MVP #1·#6·#7, 5장 원칙 2·4·7, R-008 (색만으로 구분하지 않기)
-- 브랜치: `fe/daily-schedule` 커밋 `ee6dfbc` (FE main f125c40에서 시작, main 병합 안 함)
-- **main이 그 사이 앞서 나감(T-FE17 a3dac2d, T-FE19 6ad470b):** `git merge-tree`로 충돌이 없음을 확인했습니다. 임시 워크트리에서 main + ee6dfbc를 병합한 뒤 `tsc --noEmit --noUnusedLocals`도 통과했습니다
+- 브랜치: `fe/daily-schedule` 커밋 `8836fc6` (FE main abd5957에서 시작, main 병합 안 함)
+- **main이 그 사이 앞서 나감(T-FE17 22ac0d7, T-FE19 971b1ac):** `git merge-tree`로 충돌이 없음을 확인했습니다. 임시 워크트리에서 main + 8836fc6를 병합한 뒤 `tsc --noEmit --noUnusedLocals`도 통과했습니다
 - api.md 변경 없음, 새 의존성 없음, 네이티브 모듈 없음. 어르신 화면(`src/app/elder/**`), 어르신 공용 컴포넌트(`src/components/*.tsx`), `src/notify`, `theme.ts`, `package*.json`, 기록 탭(`records.tsx`)은 바꾸지 않았습니다
 
 ## 1. 하루 약통 등록 (G2)
@@ -74,7 +74,7 @@
 ## 5. 모의 API
 
 - `mockSeed.ts`: 기본 시드 약통을 **1×3 하루 약통**(행 "하루", 열 아침·점심·저녁)으로 바꿨습니다. 일주일 약통으로 되돌리는 값은 주석에 적었습니다. 시드 일정은 칸마다 월~일입니다.
-- `putSchedule` 검증을 3.14(ad31e57)에 맞췄습니다. 같은 칸+요일과 같은 요일+시간대만 막고, 같은 칸을 여러 요일에 쓰는 것은 허용합니다.
+- `putSchedule` 검증을 3.14(475ba00)에 맞췄습니다. 같은 칸+요일과 같은 요일+시간대만 막고, 같은 칸을 여러 요일에 쓰는 것은 허용합니다.
 - 판독 기대 상태(`expectedFor`): 하루 약통은 오늘 요일 칸들만 순서대로 봅니다(매일 채운다고 가정).
 - 남은 칸(`currentPillbox`):
   - 하루 약통은 마지막 리필 뒤에 드신 칸만 빈 칸으로 보고, 오늘 남은 칸을 셉니다.
@@ -97,7 +97,7 @@
 
 ## 확인
 
-- `tsc --noEmit --noUnusedLocals` 통과 (이 브랜치, 그리고 main 6ad470b와 병합한 결과)
+- `tsc --noEmit --noUnusedLocals` 통과 (이 브랜치, 그리고 main 971b1ac와 병합한 결과)
 - 비밀값 없음. 모의 표시(보라 띠, "모의 결과", "모의 결과 포함")는 그대로입니다
 - 웹 모의 스크린샷: `20261108-fe-t-fe18-daily-schedule/`
 

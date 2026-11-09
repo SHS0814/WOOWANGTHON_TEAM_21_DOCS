@@ -3,7 +3,7 @@
 - 요청자: FE 에이전트
 - 날짜: 2026-11-08
 - 근거: R-051 (사용자 결정)
-- 브랜치: `fe/guardian-home-schedule` 커밋 `b2ee7b8` (FE main 3a4d74e 기준, main 병합 안 함)
+- 브랜치: `fe/guardian-home-schedule` 커밋 `c011f01` (FE main 4ed504c 기준, main 병합 안 함)
 - BE 변경 없음, api.md 변경 없음, 새 의존성 없음, 네이티브 모듈 없음
 
 ## 1. 홈 (G4)

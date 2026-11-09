@@ -6,7 +6,7 @@
 
 ## 무엇을 했는가
 
-FE `fe/guardian-variant` 커밋 `bf1b925` (FE main `89c401d` 위에 1개). 바꾼 파일은 `app.config.js`, `README.md` 둘이다.
+FE `fe/guardian-variant` 커밋 `c956a0c` (FE main `90af226` 위에 1개). 바꾼 파일은 `app.config.js`, `README.md` 둘이다.
 
 | | 기본 (`APP_VARIANT` 없음) | `APP_VARIANT=guardian` |
 |---|---|---|
